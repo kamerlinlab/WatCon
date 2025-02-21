@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 from scipy.spatial import cKDTree
 
-import sequence_processing
-import residue_analysis
-import visualize_structures
+import WatCon.sequence_processing as sequence_processing
+import WatCon.residue_analysis as residue_analysis
+import WatCon.visualize_structures as visualize_structures
 
 
 class WaterAtom:
@@ -855,7 +855,7 @@ def extract_objects(pdb_file, network_type, custom_selection, active_site_refere
     return water_network
 
 def get_clusters(list_of_networks, cluster, min_samples, coordinates=None, eps=0.0, n_jobs=1):
-    from find_conserved_networks import combine_graphs, cluster_nodes, cluster_coordinates_only
+    from WatCon.find_conserved_networks import combine_graphs, cluster_nodes, cluster_coordinates_only
     if coordinates is not None:
         cluster_labels, cluster_centers = cluster_coordinates_only(coordinates, cluster, min_samples, eps, n_jobs)
     else:
@@ -992,7 +992,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
 
         #Create pymol projections for each pdb
         if project_networks:
-            import visualize_structures
+            import WatCon.visualize_structures as visualize_structures
             visualize_structures.pymol_project_oxygen_network(network, filename=f"{pdb_file.split('.')[0]}.pml", out_path='pymol_projections', active_site_only=active_site_only)
 
         if return_network:

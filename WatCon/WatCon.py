@@ -111,9 +111,9 @@ def check_conditions(kwargs):
     
 def run_watcon(structure_type, kwargs):
     if structure_type == 'static':
-        from generate_static_networks import initialize_network
+        from WatCon.generate_static_networks import initialize_network
     else:
-        from generate_dynamic_networks import initialize_network
+        from WatCon.generate_dynamic_networks import initialize_network
 
     results = initialize_network(**kwargs)
 

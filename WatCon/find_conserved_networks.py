@@ -5,9 +5,6 @@ Cluster water coordinates and analyze conservation to clustered networks
 import os
 import numpy as np
 import networkx as nx
-#from  generate_dynamic_networks import initialize_water_network, pymol_project_oxygen_network, pymol_project_directed_network
-from generate_static_networks import initialize_network
-from sequence_processing import generate_msa_alignment
 from sklearn.cluster import OPTICS, DBSCAN, HDBSCAN
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 

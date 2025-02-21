@@ -14,10 +14,10 @@ from scipy.spatial import cKDTree
 from scipy.spatial.distance import pdist, squareform
 import numpy as np
 
-from sequence_processing import *
-import sequence_processing
-from visualize_structures import project_clusters
-import residue_analysis
+from WatCon.sequence_processing import *
+import WatCon.sequence_processing as sequence_processing
+from WatCon.visualize_structures import project_clusters
+import WatCon.residue_analysis as residue_analysis
 
 class WaterAtom:
     def __init__(self, index, atom_name, residue_number, x, y, z):
@@ -757,7 +757,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
 
 def get_clusters(coordinates, cluster='optics', min_samples=10, eps=0.0, n_jobs=1):
-    from find_conserved_networks import cluster_coordinates_only
+    from WatCon.find_conserved_networks import cluster_coordinates_only
     cluster_labels, cluster_centers = cluster_coordinates_only(coordinates, cluster, min_samples, eps, n_jobs)
     return cluster_labels, cluster_centers
 
@@ -979,7 +979,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
         #Create pymol projections for each frame
         if project_networks:
-            import visualize_structures
+            import WatCon.visualize_structures as visualize_structures
             visualize_structures.pymol_project_oxygen_network(network, filename=f'{frame_idx+2}.pml', out_path='pymol_projections', active_site_only=active_site_only)
 
         #Do not do this for large trajectories
