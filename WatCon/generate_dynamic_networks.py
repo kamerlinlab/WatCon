@@ -1,5 +1,5 @@
 """
-Generate water networks based on molecular dynamics data
+Generate water networks based on dynamical data
 """
 
 import os, sys
@@ -16,7 +16,7 @@ import numpy as np
 
 from sequence_processing import *
 import sequence_processing
-from find_conserved_networks import project_clusters
+from visualize_structures import project_clusters
 import residue_analysis
 
 class WaterAtom:
@@ -88,7 +88,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         water = WaterMolecule(index, o, h1, h2, residue_number)
         self.water_molecules.append(water)
 
-    def select_active_site(self, reference, box, dist_cutoff=8.0):
+    def select_active_site(self, reference, box, active_site_radius=8.0):
         """
         Selects active site atoms based on distance to reference atoms.
 
@@ -102,7 +102,6 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         - active_site protein atoms
         - active_site water atoms
         """
-
         #Create empty set for active site atoms
         active_site_atoms = []
 
@@ -122,7 +121,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             #Include atoms within a distance cutoff
             else:
                 dist = np.min(distances.distance_array(np.array(atm.coordinates).reshape(1, -1), reference_positions, box=box))
-                if dist <= dist_cutoff:
+                if dist <= active_site_radius:
                     active_site_atoms.append(atm)
                     protein_active.append(atm)
 
@@ -134,7 +133,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             water_positions = np.array([mol.O.coordinates, mol.H1.coordinates, mol.H2.coordinates])
             
             dist = np.min(distances.distance_array(water_positions, reference_positions))
-            if dist <= dist_cutoff:            
+            if dist <= active_site_radius:            
                 active_site_atoms.append(mol)
                 water_active.append(mol)
 
@@ -445,7 +444,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         return connections
 
 
-    def generate_oxygen_network(self, box, msa_indexing=None, active_site_reference=None, active_site_only=False, water_only=False):
+    def generate_oxygen_network(self, box, msa_indexing=None, active_site_reference=None, active_site_radius=8.0, 
+                                active_site_only=False, water_only=False, max_connection_distance=3.0):
         """
         Generate network based only on oxygens -- direct comparability to static structure networks
 
@@ -462,7 +462,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
         #Select active site
         if active_site_reference is not None:
-            self.active_site, protein_active, water_active = self.select_active_site(active_site_reference, box=box)
+            self.active_site, protein_active, water_active = self.select_active_site(active_site_reference, box=box, active_site_radius=active_site_radius)
 
 
         #Use MSA indexing
@@ -482,7 +482,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     MSA_index = MSA_indices[molecule.resid-1]           
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
-            self.connections = self.find_connections(dist_cutoff=3.5, water_active=water_active, protein_active=protein_active, active_site_only=active_site_only, water_only=water_only)
+            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=water_active, protein_active=protein_active, active_site_only=active_site_only, water_only=water_only)
             for connection in [f for f in self.connections if f[4]=='active_site']:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_site=connection[4])
 
@@ -496,7 +496,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     MSA_index = MSA_indices[molecule.resid-1]  
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=None)
             
-            self.connections = self.find_connections(dist_cutoff=3.5, water_active=None, protein_active=None, active_site_only=False, water_only=water_only)
+            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=None, protein_active=None, active_site_only=False, water_only=water_only)
 
             for connection in self.connections:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_site=connection[4])
@@ -506,7 +506,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
         return self.graph
 
-    def generate_directed_network(self, box, msa_indexing=None, active_site_reference=None, active_site_only=False, water_only=False, angle_criteria=None):
+    def generate_directed_network(self, box, msa_indexing=None, active_site_reference=None, active_site_radius=8.0, 
+                                  active_site_only=False, water_only=False, angle_criteria=None, max_connection_distance=3.0):
         """
         Generate directed graph using H -> O directionality
 
@@ -522,7 +523,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
  
         #Select active site if a reference is given
         if active_site_reference is not None:
-            self.active_site, protein_active, water_active = self.select_active_site(active_site_reference, box=box)
+            self.active_site, protein_active, water_active = self.select_active_site(active_site_reference, box=box, active_site_radius=active_site_radius)
 
         #Use MSA indexing
         if msa_indexing is not None:
@@ -542,7 +543,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
             #Add edges
-            self.connections = self.find_directed_connections(dist_cutoff=2.5, water_active=water_active, protein_active=protein_active, active_site_only=active_site_only, water_only=water_only, angle_criteria=angle_criteria)
+            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=water_active, protein_active=protein_active, active_site_only=active_site_only, water_only=water_only, angle_criteria=angle_criteria)
             for connection in [f for f in self.connections if f[4]=='active_site']:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_site=connection[4])
 
@@ -557,7 +558,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
             
             #Add edges
-            self.connections = self.find_directed_connections(dist_cutoff=2.5, water_active=None, protein_active=None, active_site_only=False, water_only=water_only)
+            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=None, protein_active=None, active_site_only=False, water_only=water_only)
             for connection in self.connections:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_site=connection[4])
 
@@ -588,7 +589,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
         return density
 
-    def get_connected_components(self, selection='active_site'):
+    def get_connected_components(self, selection='all'):
         """
         Requires self.graph to exist
         Uses weakly_connected_components if graph is directed and connected_components if graph is undirected
@@ -729,16 +730,23 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         return H
     
     def get_all_coordinates(self, selection='all', water_only=True):
+        """
+        Collect all coordinates from WaterNetwork object
+
+        Parameters:
+        - selection: 'all', 'active_site', or 'not_active_site'
+        - water_only: Indicate whether to use water coordinates only
+        """
         #Choose all subgraphs under particular criteria
         if selection=='all':
-            #Find all coordinates
+            #Find all coordinates -- only water oxygens
             coords = [np.array(f.O.coordinates) for f in self.water_molecules]
 
             if not water_only:
                 coords.extend([np.array(f.coordinates) for f in self.protein_subset])
 
         else:
-            #Find all coordinates
+            #Find all coordinates -- only water oxygens
             coords = [np.array(f.O.coordinates) for f in self.active_site if type(f)==WaterMolecule]
 
             if not water_only:
@@ -747,88 +755,16 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
         return coords
 
-    def plot_network(self):
-        """
-        Plot self.graph using networkx
 
-        Returns:
-        None
-        """
-        pos = nx.spring_layout(self.graph, dim=3)
-
-        node_xyz = np.array([pos[v] for v in sorted(self.graph)])
-        edge_xyz = np.array([(pos[u], pos[v]) for u, v in self.graph.edges()])
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(*node_xyz.T, s=100, ec='w')
-        for vizedge in edge_xyz:
-            ax.plot(*vizedge.T, color="tab:gray")
-
-        fig.tight_layout()
-        #plt.show()
-
-
-def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_projections', active_site_only=False, water_only=False):
-    """
-    Create .pml file to showcase calculated network
-
-    Returns:
-    None
-    """
-    with open(os.path.join(out_path, filename), 'w') as FILE:
-        #for i, mol in enumerate(network.water_molecules):
-            #FILE.write(f"show spheres, id {mol.O.index+1}\nset sphere_scale, 0.3, id {mol.O.index+1}\n")
-
-        #If active_site_only, then only project connections within the active site. Note this is redundant if you have 
-        #chosen to only include active site atoms in your whole network
-        if active_site_only:
-            connection_list = [f for f in network.connections if f[4]=='active_site']
-        else:
-            connection_list = network.connections
-        
-        if water_only:
-            connection_list = [f for f in connection_list if f[3]=='WAT-WAT']
-
-
-        for i, connection in enumerate(connection_list):
-            FILE.write(f"distance interaction{i}, id {connection[0]+1}, id {connection[1]+1}\n")
-            FILE.write(f"show spheres, id {connection[0]+1}\nshow spheres, id {connection[1]+1}\n")
-
-        #Stylistic preferences
-        FILE.write(f"set dash_radius, 0.15, interaction*\nset dash_color, black, interaction*\n")
-        FILE.write(f"set dash_gap, 0.0, interaction*\nhide labels, interaction*\n")
-        FILE.write(f"set sphere_scale, 0.2\n")
-        FILE.write(f"bg white\n")
-
-        #Create WaterNetwork group
-        FILE.write(f"group WaterNetwork, interaction*\n")
-
-'''
-def collect_coordinates(water_molecules):
-    """
-    Collects coordinates of all water molecules to be used for clustering
-
-    Parameters:
-    - water_molecules: list of WaterAtom objects
-
-    Returns:
-    - Numpy array of compiled coordinates
-    """
-    coordinates = np.array(len(water_molecules),3)
-    for i, mol in enumerate(water_molecules):
-        coordinates[i,:] = mol.coordinates
-    
-    return coordinates
-'''
-
-def get_clusters(coordinates, cluster='optics', min_samples=10, eps=0.6, n_jobs=1):
+def get_clusters(coordinates, cluster='optics', min_samples=10, eps=0.0, n_jobs=1):
     from find_conserved_networks import cluster_coordinates_only
     cluster_labels, cluster_centers = cluster_coordinates_only(coordinates, cluster, min_samples, eps, n_jobs)
     return cluster_labels, cluster_centers
 
 
 def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type, custom_selection, 
-                              active_site_reference, water_name, msa_indexing, active_site_only=False, directed=False, angle_criteria=None):
+                              active_site_reference, active_site_radius, water_name, msa_indexing, 
+                              active_site_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0):
     """
     Function to return calculated network per frame
     
@@ -902,50 +838,64 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
         ats = [atom for atom in mol.atoms]
         #Water molecules are objects which contain H1, H2, O atoms
         water_network.add_water(mol.resid, *ats, mol.resid)
-
     #Either find connections among only oxygens in waters or add hydrogens as well
     if directed:
-        water_network.generate_directed_network(u.dimensions, msa_indexing, active_site_residue, active_site_only=active_site_only, water_only=water_only, angle_criteria=angle_criteria)
+        water_network.generate_directed_network(u.dimensions, msa_indexing, active_site_residue, active_site_radius=active_site_radius, 
+                                                active_site_only=active_site_only, water_only=water_only, angle_criteria=angle_criteria, 
+                                                max_connection_distance=max_connection_distance)
     else:
-        water_network.generate_oxygen_network(u.dimensions, msa_indexing, active_site_residue, active_site_only=active_site_only, water_only=water_only)
+        water_network.generate_oxygen_network(u.dimensions, msa_indexing, active_site_residue, active_site_radius=active_site_radius, 
+                                              active_site_only=active_site_only, water_only=water_only, max_connection_distance=max_connection_distance)
     
     return water_network
 
 
-def initialize_network(topology_name, trajectory_name, network_type='water-protein', custom_residues='',
-                       active_site_reference=None, water_name=None, num_workers=4, include_hydrogens=False,
-                       active_site_only=False, project_networks=False, return_network=False, cluster_coordinates=True, clustering_method='dbscan',
-                       min_cluster_samples=15, eps=0.6, msa_indexing=True, alignment_file='alignment.txt',
-                       combined_fasta='all_seqs.fa', fasta_dir='fasta', classify_water=False, MSA_reference_pdb=None,
-                       water_reference_resids=None, angle_criteria=None, multi_model_pdb=False, max_distance=3.3, structure_directory=None):
+def initialize_network(topology_file, trajectory_file, structure_directory='.', network_type='water-protein', 
+                       include_hydrogens=False, custom_selection='', active_site_reference=None, active_site_only=False, 
+                       active_site_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.3, angle_criteria=None,
+                       analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=False, 
+                       cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True, 
+                       alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=False,
+                       MSA_reference_pdb=None, water_reference_resids=None, num_workers=4):
+    
     """
     Initialize network of choice. 
 
     Parameters:
+    - topology_file: Name of topology file
+    - trajectory_file: Name of trajectory file
+    - structure_directory: Name of directory which contains structure files
     - network_type: 'water-water' or 'water-protein'
+    - include_hydrogens: Indicate whether to make a directed graph with hydrogens
     - custom_selection: Any MDAnalysis selection language if you have custom residues (etc.) which you want included in your protein selection
     - active_site_reference: Any MDAnalysis selection language to define the center of your area of interest
-    - num_workers: Available cores
-    - directed: Creates directed network, default is undirected
-    - active_site_only: Only include active site atoms in calculated netowrks -- drastically decreases computational time, highly recommended for directed networks
-    - project: Indicate whether to create pymol files of networks
-    - return_network: Indicate whether to return the WaterNetwork object per frame (NOT RECOMMENDED FOR LARGE TRAJECTORIES)
-    - cluster: Indicate whether to perform clustering on combined network
-    - min_cluster_samples: Minimum number of samples per cluster
-    - msa_indexing_on: Indicate whether to perform an msa alignment -- requires fasta files
-    - alignment_file: Name of alignment file. If file does not exist, one is created under this name
-    - combined_fasta: Name of combined fasta file
-    - fasta_dir: Name of fasta directory containing individual fasta files
-    - classify_water: Indicate whether to perform a water classification based on MSA indexing
-    - MSA_reference_pdb: Indicate which pdb to use as reference for equivalent selections
-    - water_reference_resid: List of residue numbers to use for water angle analysis for particular pdb (optional)
-    - NMR: Indicate whether pdb file has multiple models (most traditionally for NMR structures)
-    - angle_criteria: Criteria for HBond cutoffs based on angles
+    - active_site_only: Indicate whether to only include active site atoms
+    - active_site_radius: Radius of active site centered on reference
+    - water_name: Name of water residues, by default WatCon will recognize SOL, WAT, H2O, HOH
+    - multi_model_pdb: Indicate whether pdb file has multiple models (most traditionally for NMR structures)
+    - max_distance: Maximum distance between water atoms for an interaction to exist
+    - angle_criteria: Specify extra angle criteria for calculating HBonds if hydrogens are present (recommend 150)
+    - analysis_conditions: 'all' or dict specifying which analyses to perform
+    - analysis_selection: 'all', 'active_site', or 'not_active_site' -- indicate what atoms to perform analysis on
+    - project_networks: Indicate whether to generate pymol pml files for each network
+    - return_network: Indicate whether to return the WaterNetwork objects (not recommended for large trajectories)
+    - cluster_coordinates: Indicate whether to perform clustering on combined network
+    - clustering_method: Clustering method -- 'hdbscan', 'dbscan', or 'optics'
+    - min_cluster_samples: Minimum number of samples for cluster
+    - eps: Eps distance for clustering
+    - msa_indexing: Indicate whether to utilize/perform an MSA
+    - alignment_file: Alignment file (PIR format)
+    - combined_fasta: Combined fasta file
+    - fasta_directory: Directory of fasta files
+    - classify_water: Indicate whether to classify waters by angles and MSA
+    - MSA_reference_pdb: PDB used as a reference to select residues
+    - water_reference_resids: Resid IDs for water angle classification references
+    - num_workers: Number of cores avaialble for parallelization
 
     Returns:
-    Dictionary of calculated metrics per trajectory frame
+    Dictionary of calculated metrics per trajectory frame, cluster centers (if clustering is on)
     """
-    def process_frame(frame_idx, project, return_network, coords=None, ref_coords=None, NMR=False, residues=None):
+    def process_frame(frame_idx, coords=None, ref_coords=None, residues=None):
         """
         Internal function to make parallelizing each frame easier
 
@@ -957,51 +907,63 @@ def initialize_network(topology_name, trajectory_name, network_type='water-prote
 
 
         #If an MSA has been performed
-        if msa_indexing_on == True:
+        if msa_indexing == True:
 
             #Assuming fasta file is named similarly to the pdb -- need sequence files for MSA alignment
             try:
-                fasta_individual = [f for f in os.listdir(fasta_dir) if (pdb_file.split('_')[0] in f and 'fa' in f)][0] #THIS IS NOT GENERALIZED
-                #Generate MSA alignment if file does not exist and output MSA indices corresponding to partcicular sequence
-                msa_indices = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_dir, fasta_individual))
+                fasta_individual = [f for f in os.listdir(fasta_directory) if (topology_file.split('.')[0].split('_')[0] in f and 'fa' in f)][0]
 
+                #Generate MSA if file does not exist and output MSA indices corresponding to partcicular sequence
+                msa_indices = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
+
+            #If MSA cannot be done, use residues as msa_indices
             except:
-                print(f'Could not find an equivalent fasta file for {pdb_file}, using all residues')
+                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. Check your naming schemes!')
                 msa_indices = residues
             
         else:
             msa_indices = None
 
-        #Create empty dictionary which will contain all metrics calculated
-        metrics = {}
-        network = extract_objects_per_frame(pdb_file, traj_file, frame_idx, network_type, custom_selection, active_site_reference, water_name, msa_indexing=msa_indices, active_site_only=active_site_only, directed=directed, angle_criteria=angle_criteria)
-        metrics['density'] = network.get_density()
-        metrics['connected_components'] = network.get_connected_components()
-        metrics['interaction_counts'] = network.get_interactions()
-        metrics['per_residue_interaction'] = network.get_per_residue_interactions()
-        metrics['characteristic_path_length'] = network.get_CPL()
-        metrics['entropy'] = network.get_entropy()
-        metrics['clustering_coefficient'] = network.get_clustering_coefficient()
-        #clustering coefficient -- https://www.annualreviews.org/content/journals/10.1146/annurev-physchem-050317-020915
-        #degree distribution
-        #characteristic minimum path length
-        #graph entropy
+        #Create WaterNetwork object
+        network = extract_objects_per_frame(pdb_file, traj_file, frame_idx, network_type, custom_selection, active_site_reference, 
+                                            active_site_radius=active_site_radius, water_name=water_name, msa_indexing=msa_indices, 
+                                            active_site_only=active_site_only, directed=include_hydrogens, angle_criteria=angle_criteria, 
+                                            max_connection_distance=max_distance)
 
+        metrics = {}
+        #Calculate metrics as per user input
+        if analysis_conditions['density'] == True:
+            metrics['density'] = network.get_density(selection=analysis_selection)
+        if analysis_conditions['connected_components'] == True:
+            metrics['connected_components'] = network.get_connected_components(selection=analysis_selection)
+        if analysis_conditions['interaction_counts'] == True:
+            metrics['interaction_counts'] = network.get_interactions(selection=analysis_selection)
+        if analysis_conditions['per_residue_interactions'] == True:
+            metrics['per_residue_interaction'] = network.get_per_residue_interactions(selection=analysis_selection)
+        if analysis_conditions['characteristic_path_length'] == True:
+            metrics['characteristic_path_length'] = network.get_CPL(selection=analysis_selection)
+        if analysis_conditions['graph_entropy'] == True:
+            metrics['entropy'] = network.get_entropy(selection=analysis_selection)
+        if analysis_conditions['clustering_coefficient'] == True:
+            metrics['clustering_coefficient'] = network.get_clustering_coefficient(selection=analysis_selection)
+        #clustering coefficient -- https://www.annualreviews.org/content/journals/10.1146/annurev-physchem-050317-020915
+
+        #Classify waters
         if classify_water: 
             if msa_indices is None:
-                print('No MSA indices found, waters cannot be classified without a MSA!')
+                print('No MSA indices found, waters cannot be classified without a common indexing reference!')
+                raise ValueError
             
-            #classification_dict = classify_waters(network,ref1_coords=ref_coords, ref2_coords=None)
-
+            #Select reference coords
             if len(ref_coords) == 1:
                 ref2_coords = None
             else:
                 ref2_coords = ref_coords[1]
-            #classification_dict = classify_waters(network,ref1_coords=ref_coords, ref2_coords=None)
+
             classification_dict = residue_analysis.classify_waters(network, ref1_coords=ref_coords[0], ref2_coords=ref2_coords)
 
-            #Write classification dict into a csv file -- CHANGE THIS FOR TRAJECTORIES
-            with open(f'CLASSIFICATION_MD.csv', 'a') as FILE:
+            #Write classification dict into a csv file
+            with open(f'CLASSIFICATION_DYNAMIC.csv', 'a') as FILE:
                 for key, val in classification_dict.items():
                         FILE.write(f"{frame_idx},{key},{val[0]},{val[1]}\n")
 
@@ -1011,24 +973,38 @@ def initialize_network(topology_name, trajectory_name, network_type='water-prote
                 selection = 'active_site'
             else:
                 selection='all'
-            #coords.append(network.get_all_coordinates(selection=selection))
+
             coords = network.get_all_coordinates(selection=selection)
             metrics['coordinates'] = np.array(coords).reshape(-1,3)
 
         #Create pymol projections for each frame
-        if project:
-            pymol_project_oxygen_network(network, filename=f'{frame_idx+2}.pml', out_path='pymol_projections', active_site_only=active_site_only)
-
-        #ETC ETC ETC
+        if project_networks:
+            import visualize_structures
+            visualize_structures.pymol_project_oxygen_network(network, filename=f'{frame_idx+2}.pml', out_path='pymol_projections', active_site_only=active_site_only)
 
         #Do not do this for large trajectories
         if return_network:
             return (network, metrics)
-        
-        
         else:
             return(metrics)
+        
+
     
+    #Get pdb and traj file
+    pdb_file = os.path.join(structure_directory, topology_file)
+    traj_file = os.path.join(structure_directory, trajectory_file)
+
+    if analysis_conditions == 'all':
+        analysis_conditions = {
+            'density': True,
+            'connected_components': True,
+            'interaction_counts': True,
+            'per_residue_interactions': True,
+            'characteristic_path_length': True,
+            'graph_entropy': True,
+            'clustering_coefficient': True
+        }
+
     #Create universe object just once to get number of frames
     try:
         u = mda.Universe(pdb_file, traj_file)
@@ -1036,111 +1012,54 @@ def initialize_network(topology_name, trajectory_name, network_type='water-prote
         residues = u.residues.resids.tolist()
 
     except:
-        if NMR == True:
+        if multi_model_pdb == True:
             u = mda.Universe(pdb_file, multiframe=True)
             frames = len(u.trajectory)
         else:
+            print('Warning: You are attempting to create networks for only one structure. Consider using generate_static_networks instead')
             u = mda.Universe(pdb_file)
             frames = 0
 
-
-    if cluster:
+    #Initialize empty list to collect coordinates if clustering
+    if cluster_coordinates:
         coords = []
     else:
         coords=None
 
+    #Initialize ref_coords if classifying water
     ref_coords = [None]
     if classify_water:
         #Find ref_coords if particular residue is indicated
-        if water_reference_resid is not None:
-            u = mda.Universe(MSA_reference_pdb)
-            if isinstance(water_reference_resid, list):
-                ref_coords = [u.select_atoms(f"resid {water_reference_resid[0]} and name CA").positions, u.select_atoms(f"resid {water_reference_resid[1]} and name CA").positions]
-            else:
-                ref_coords = [u.select_atoms(f"resid {water_reference_resid} and name CA").positions]
+        if water_reference_resids is not None:
+            u = mda.Universe(os.path.join(structure_directory, MSA_reference_pdb))
 
-        with open(f'CLASSIFICATION_MD.csv', 'w') as FILE:
+            #Allows for maximum 2 reference resids
+            if isinstance(water_reference_resids, list):
+                ref_coords = [u.select_atoms(f"resid {water_reference_resids[0]} and name CA").positions, u.select_atoms(f"resid {water_reference_resids[1]} and name CA").positions]
+            else:
+                ref_coords = [u.select_atoms(f"resid {water_reference_resids} and name CA").positions]
+
+        #Write header for classification file
+        with open(f'CLASSIFICATION_DYNAMIC.csv', 'w') as FILE:
             FILE.write('Frame Index,Resid,MSA_Resid,Index_1,Index_2,Protein_Atom,Classification,Angle_1,Angle_2\n')
 
 
     #Parallelized so there is one worker allocated for each frame
-    network_metrics = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, project, return_network, coords, ref_coords, NMR, residues) for frame_idx in range(frames))
+    network_metrics = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, coords, ref_coords, residues) for frame_idx in range(frames))
 
-    if cluster:
-        print('Clustering')
+    #Cluster coordinates after networks are created returns metrics and centers
+    if cluster_coordinates:
+        print('Clustering...')
+
         # Assuming network_metrics contains dictionaries with 'coordinates' arrays
         coordinates = [
             f['coordinates'] for f in network_metrics if f['coordinates'].shape[1] == 3
         ]
-
-        # Transpose each (3, x) array to (x, 3) and concatenate along axis 0
         combined_coordinates = np.concatenate([arr for arr in coordinates], axis=0)
-        cluster_labels, cluster_centers = get_clusters(combined_coordinates, cluster=clustering_type, min_samples=min_cluster_samples, eps=eps, n_jobs=num_workers)
+
+        cluster_labels, cluster_centers = get_clusters(combined_coordinates, cluster=clustering_method, min_samples=min_cluster_samples, eps=eps, n_jobs=num_workers)
         project_clusters(cluster_centers, filename_base='MD', separate_files=False)
-        return(network_metrics, (cluster_labels, cluster_centers))
+        return (network_metrics, cluster_centers)
 
-
+    #Return only metrics if no clustering
     return(network_metrics)
-
-
-def export_graph_to_pdb(graph, output_file):
-    """
-    Create a pdb file with dummy atoms at coordinates within a given graph
-    """
-    with open(output_file, 'w') as f:
-        atom_serial = 1
-        # Collect nodes involved in active site edges
-        active_site_nodes = set()
-        for edge1, edge2, data in graph.edges(data=True):
-            if data.get('active_site') == 'active_site':
-                active_site_nodes.add(edge1)
-                active_site_nodes.add(edge2)
-
-        # Write nodes as PDB atoms
-        for node, data in graph.nodes(data=True):
-            if node in active_site_nodes:  # Check if node is part of active site
-                x, y, z = data.get('pos', (0.0, 0.0, 0.0))  # Default position if not provided
-                f.write(
-                    f"ATOM  {atom_serial:5d}  O   HOH A{atom_serial:4d}    {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           O\n"
-                )
-                atom_serial += 1
-
-#Remove this eventually
-def save_xyz(network, filename='STATE.xyz'):
-    """
-    Create xyz file with graph coordinates
-    """
-    with open(filename, 'w') as FILE:
-        FILE.write(f"{len(network.molecules)}\n")
-        for i, mol in enumerate(network.molecules):
-            x, y, z  = mol.coordinates
-            FILE.write(f"{mol.name}\t{x:.3f} {y:.3f} {z:.3f}\n")
-
-def read_xyz(xyz_file):
-    """
-    Extract positions from xyz file -- mostly useful for pymol projections
-    """
-    with open(xyz_file, 'r') as FILE:
-        lines = FILE.readlines()
-    pos = []
-    for line in lines:
-        pos.append([line.split()[1], line.split()[2], line.split()[3]])
-    return pos
-
-if __name__ == "__main__":
-    """
-    water_prot_network = WaterProteinNetwork()
-
-    for atom in wat:
-        water_prot_network.add_atom(atom.index, atom.name, atom.resname, *atom.position)
-    for atom in protein:
-        water_prot_network.add_atom(atom.index, atom.name, atom.resname, *atom.position, atom.resid)
-
-    network = water_prot_network.generate_network()  
-    """
-    #put in argument parsing or perhaps not and this file is used by the actual main package
-    network_list = initialize_network(parm='/home/abrownless3/Documents/Summer2024/get_PTP1B_traject_short/analysis/output_fixed.gro', 
-                                                              traj='/home/abrownless3/Documents/Summer2024/get_PTP1B_traject_short/analysis/output_final.xtc', 
-                                                              custom_selection='resname CSP or resname CYM')
-    #graph = water_network.generate_network()
-    #pymol_project_network_old(water_network, filename='STATE.pml', out_path='tmp')

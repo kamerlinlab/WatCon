@@ -4,11 +4,11 @@
 structure_type: static                          ; Create static or dynamic networks
                                                 ;     Use dynamic for multiple pdb models
 structure_directory: aligned_with_waters        ; Directory of structure files 
-topology_name: None                             ; Name of topology (required for dynamic)
-trajectory_name: None                           ; Name of trajectory (required for dynamic)
+topology_file: None                             ; Name of topology (required for dynamic)
+trajectory_file: None                           ; Name of trajectory (required for dynamic)
 network_type: water-protein                     ; Use only waters (water-water) or also protein atoms (water-protein)
 include_hydrogens: off                          ; If include_hydrogens = on, create a directed graph
-custom_residues: resname CSP                    ; Any custom residues not in a standard
+custom_selection: resname CSP                   ; Any custom residues not in a standard
                                                 ;     MDAnalysis 'protein' selection
 water_name: standard                            ; Any custom water names
 multi_model_pdb: False                          ; pdb files have multiple models (typical of NMR structures)
@@ -20,6 +20,16 @@ angle_criteria: None                            ; Specify criteria for calculati
                                                 ;     angles+distances (recommended 120 if hydrogens
                                                 ;     are present)
 
+
+; Active site definition
+active_site_reference: resid 214 and name P     ; MDAnalysis selection language to center active site
+
+active_site_only: on                            ; Indicate whether to only calculate water networks
+                                                ;     around an active site 
+active_site_radius: 8                           ; Radius of active site around refernce
+
+
+
 ; Property calculation
 density: on
 connected_components: on
@@ -29,22 +39,18 @@ characteristic_path_length: on
 graph_entropy: on
 clustering_coefficient: on
 save_coordinates: on
-selection: all                                  ; Selection for analysis 
+analysis_selection: all                         ; Selection for analysis 
                                                 ;     (all, active_site, not_active_site)
 
-; Active site definition
-active_site_reference: resid 214 and name CA    ; MDAnalysis selection language to center active site
 
-active_site_only: on                            ; Indicate whether to only calculate water networks
-                                                ;     around an active site 
-active_site_radius: 8                           ; Radius of active site around refernce
+
 
 ; Visualization
 project_networks: off                           ; Create PyMOL files per pdb/frame
 
 ; Clustering
 cluster_coordinates: off                        ; Perform a clustering analysis on all coordiantes
-clustering_method: dbscan                    ; Clustering algorithm: dbscan, hdbscan, or optics
+clustering_method: dbscan                       ; Clustering algorithm: dbscan, hdbscan, or optics
 min_cluster_samples: 20                         ; Minimum samples per cluster
 eps: 0.6                                        ; Eps value for clustering
 
@@ -55,7 +61,7 @@ alignment_file: alignment.txt                   ; Name of alignment file (if fil
 make_fastas: on                                 ; If 'on', WatCon will make fasta files 
                                                 ;     from the pdbs in structure_directory
 combined_fasta: all_seqs.fa                     ; Name of combined fasta file
-individual_fasta_directory: fasta               ; Directory containing individual fasta files
+fasta_directory: fasta                          ; Directory containing individual fasta files
 MSA_reference_pdb: 1AAX_aligned.pdb             ; Any pdb which can be used as a reference
                                                 ;     (active_site_reference needs to be accurate 
                                                 ;     for this structure)
