@@ -135,3 +135,17 @@ def find_commonality(networks, centers, names):
         commonality_dict[names[i]] = conserved/len(centers)
     return commonality_dict
 
+
+def identify_conserved_water_clusters(networks, centers, names, dist_cutoff):
+
+    center_dict = {}
+    dist = lambda x1, y1, z1, x2, y2, z2: np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
+    for i, network in enumerate(networks):
+        for j, center in enumerate(centers):
+            for wat in network.water_molecules:
+                x1 = wat.O.coordinates[0]
+                y1 = wat.O.coordinates[1]
+                z1 = wat.O.coordinates[2]
+                x2, y2, z2 = center
+                if dist(x1,y1,z1, x2,y2,z2) <= dist_cutoff:
+                    pass

@@ -1,5 +1,6 @@
 import os, sys
 import argparse
+import pickle
 
 def parse_inputs(filename):
     """
@@ -120,12 +121,15 @@ def run_watcon(structure_type, kwargs):
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Perform analysis using WatCon')
     parser.add_argument('--input', type=str, help='Input file')
+    parser.add_argument('--name', type=str, help='Identifiable name', default='results')
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
     structure_type, kwargs = parse_inputs(args.input)
-    run_watcon(structure_type, kwargs)
+    results = run_watcon(structure_type, kwargs)
+    with open(f'{args.name}.pkl', 'wb') as f:
+        pickle.dump(results, f)
 
 
     
