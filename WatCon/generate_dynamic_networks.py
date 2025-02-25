@@ -188,7 +188,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                         'active_site' if any(waters[i].resid == f.resid for f in self.active_site) else
                         'not_active_site'
                     )
-                    connections.append((water_indices[i], water_indices[neighbor], water_names[i], 'WAT-WAT', site_status))
+                    if water_indices[i] < water_indices[neighbor]:
+                        connections.append((water_indices[i], water_indices[neighbor], water_names[i], 'WAT-WAT', site_status))
 
         # Water-Protein connections
         if not water_only:
@@ -425,7 +426,9 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                         
                         #Append connections
                         if angle_criteria is None:
-                            connections.append([water_H_indices[index_near],water_O_indices[index_ref[i]], water_H_names[index_near], 'WAT-WAT', site_status])
+                            if water_H_indices[index_near]<water_O_indices[index_ref[i]]:
+                                print('IMPORTANT: CHECKING DUPLICATE CONNECTIONS')
+                                connections.append([water_H_indices[index_near],water_O_indices[index_ref[i]], water_H_names[index_near], 'WAT-WAT', site_status])
 
                         else:
                             water_hydrogen_coords = water_H_coords[index_near]
@@ -438,7 +441,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                             cosine_angle = np.dot(water1, water2) / (np.linalg.norm(water2) * np.linalg.norm(water1))
                             angle1 = np.degrees(np.arccos(cosine_angle))
 
-                            if angle1 >= angle_criteria:
+                            if angle1 >= angle_criteria and water_H_indices[index_near]<water_O_indices[index_ref[i]]:
                                 connections.append([water_H_indices[index_near],water_O_indices[index_ref[i]], water_H_names[index_near], 'WAT-WAT', site_status])
 
         return connections

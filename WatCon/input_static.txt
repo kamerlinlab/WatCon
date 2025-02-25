@@ -45,6 +45,7 @@ project_networks: off                           ; Create PyMOL files per pdb/fra
 ; Clustering
 cluster_coordinates: on                        ; Perform a clustering analysis on all coordiantes
 clustering_method: hdbscan                       ; Clustering algorithm: dbscan, hdbscan, or optics
+cluster_water_only: off                        ; Cluster water only
 min_cluster_samples: 5                         ; Minimum samples per cluster
 eps: 0.0                                        ; Eps value for clustering
 

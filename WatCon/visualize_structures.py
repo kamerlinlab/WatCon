@@ -50,7 +50,7 @@ def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_
         FILE.write(f"group WaterNetwork, interaction*\n")
 
 
-def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=True):
+def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=True, b_factors=None):
     """
     Create pdb file to visualize cluster centers
 
@@ -59,6 +59,7 @@ def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=Tr
     - filename_base: Naming scheme to use for outputted pdb
     - separate_files (True/False): Indicate whether to create a separate xyz for each 
                                    cluster or one combined pdb
+    - b_factors: Optional list of values replacing the B-factor column
 
     Returns:
     None
@@ -67,6 +68,10 @@ def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=Tr
     #Obtain coordinates from cluster centers
     if type(coordinate_list) == dict:
         coordinate_list = coordinate_list.values() 
+
+    if b_factors is None:
+        b_factors = [0.00] * len(coordinate_list)  # Default B-factor is 0.00 if not provided
+
 
     if separate_files == True:
         for label, center in enumerate(coordinate_list):
@@ -79,11 +84,11 @@ def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=Tr
         filename = f"{filename_base}.pdb"
         with open(filename, 'w') as FILE:
             atom_serial = 1
-            for label, center in enumerate(coordinate_list):
+            for label, (center, b_factor) in enumerate(zip(coordinate_list, b_factors)):
                 # Write each cluster center as an oxygen atom in PDB format
                 FILE.write(
                     f"ATOM  {atom_serial:5d}  O   HOH A{label:4d}    "
-                    f"{center[0]:8.3f}{center[1]:8.3f}{center[2]:8.3f}  1.00  0.00           O\n"
+                    f"{center[0]:8.3f}{center[1]:8.3f}{center[2]:8.3f}  1.00 {b_factor:6.2f}           O\n"
                 )
                 atom_serial += 1
 

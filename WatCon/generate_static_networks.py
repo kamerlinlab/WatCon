@@ -186,7 +186,6 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
         if len(water_coords.shape) != 2:
             return connections  
-          
         # Water-Water connections
         tree = cKDTree(water_coords)
         dist, indices = tree.query(water_coords, k=10, distance_upper_bound=dist_cutoff)
@@ -199,7 +198,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                         'active_site' if any(waters[i].resid == f.resid for f in self.active_site) else
                         'not_active_site'
                     )
-                    connections.append((water_indices[i], water_indices[neighbor], water_names[i], 'WAT-WAT', site_status))
+                    if water_indices[i] < water_indices[neighbor]:
+                        connections.append((water_indices[i], water_indices[neighbor], water_names[i], 'WAT-WAT', site_status))
 
         # Water-Protein connections
         if not water_only:
@@ -223,7 +223,6 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                         else:
                             classification = 'side-chain'
                         connections.append((protein_indices[neighbor], water_indices[i], protein_names[neighbor], 'WAT-PROT', site_status, classification))
-        
         return connections
 
     def find_directed_connections(self, dist_cutoff=2.0, water_active=None, protein_active=None, active_site_only=False, water_only=False, angle_criteria=None):
@@ -435,7 +434,9 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                         
                         #Append connections
                         if angle_criteria is None:
-                            connections.append([water_H_indices[index_near],water_O_indices[index_ref[i]], water_H_names[index_near], 'WAT-WAT', site_status])
+                            if water_H_indices[index_near]<water_O_indices[index_ref[i]]:
+                                print('IMPORTANT CHANGE: TRYING NOT TO MAKE DUPLICATE CONNECTIONS')
+                                connections.append([water_H_indices[index_near],water_O_indices[index_ref[i]], water_H_names[index_near], 'WAT-WAT', site_status])
 
                         else:
                             water_hydrogen_coords = water_H_coords[index_near]
@@ -448,7 +449,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                             cosine_angle = np.dot(water1, water2) / (np.linalg.norm(water2) * np.linalg.norm(water1))
                             angle1 = np.degrees(np.arccos(cosine_angle))
 
-                            if angle1 >= angle_criteria:
+                            if angle1 >= angle_criteria and water_H_indices[index_near]<water_O_indices[index_ref[i]]:
                                 connections.append([water_H_indices[index_near],water_O_indices[index_ref[i]], water_H_names[index_near], 'WAT-WAT', site_status])
 
         return connections
@@ -632,7 +633,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         components = np.array(components).reshape(-1,1)
         return components
     
-    def get_interaction_counts(self, selection='all'):
+    def get_interactions(self, selection='all'):
         """
         Get dictionary of number of wat-wat and prot-wat interactions
 
@@ -869,7 +870,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
                        include_hydrogens=False, custom_selection='', active_site_reference=None, active_site_only=False,
                        active_site_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.3, angle_criteria=None,
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=True,
-                       cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True,
+                       cluster_coordinates=False, clustering_method='hdbscan', cluster_water_only=True, min_cluster_samples=15, eps=None, msa_indexing=True,
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=True, 
                        MSA_reference_pdb=None, water_reference_resids=None, num_workers=4):
                        
@@ -987,7 +988,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             else:
                 selection='all'
             #coords.append(network.get_all_coordinates(selection=selection))
-            coords = network.get_all_coordinates(selection=selection)
+            coords = network.get_all_coordinates(selection=selection, water_only=cluster_water_only)
             metrics['coordinates'] = np.array(coords).reshape(-1,3)
 
         #Create pymol projections for each pdb
