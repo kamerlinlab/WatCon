@@ -12,6 +12,14 @@ dependencies:
   - pydata-sphinx-theme
   - sphinx-design
   - sphinx-copybutton
+  - sphinx_rtd_theme         
+  - sphinxcontrib-applehelp  
+  - sphinxcontrib-devhelp    
+  - sphinxcontrib-htmlhelp   
+  - sphinxcontrib-jquery     
+  - sphinxcontrib-jsmath     
+  - sphinxcontrib-qthelp     
+  - sphinxcontrib-serializinghtml
 
 
 

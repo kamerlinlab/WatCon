@@ -21,6 +21,9 @@ def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_
     Returns:
     None
     """
+
+    os.makedirs(out_path, exist_ok=True)
+
     with open(os.path.join(out_path, filename), 'w') as FILE:
         #for i, mol in enumerate(network.water_molecules):
             #FILE.write(f"show spheres, id {mol.O.index+1}\nset sphere_scale, 0.3, id {mol.O.index+1}\n")

@@ -854,7 +854,7 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
 
 
 def initialize_network(topology_file, trajectory_file, structure_directory='.', network_type='water-protein', 
-                       include_hydrogens=False, custom_selection='', active_site_reference=None, active_site_only=False, 
+                       include_hydrogens=False, custom_selection=None, active_site_reference=None, active_site_only=False, 
                        active_site_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.3, angle_criteria=None,
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=False, 
                        cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True, 

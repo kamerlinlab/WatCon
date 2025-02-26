@@ -223,6 +223,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                         else:
                             classification = 'side-chain'
                         connections.append((protein_indices[neighbor], water_indices[i], protein_names[neighbor], 'WAT-PROT', site_status, classification))
+        print(connections)
         return connections
 
     def find_directed_connections(self, dist_cutoff=2.0, water_active=None, protein_active=None, active_site_only=False, water_only=False, angle_criteria=None):
@@ -451,7 +452,6 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
                             if angle1 >= angle_criteria and water_H_indices[index_near]<water_O_indices[index_ref[i]]:
                                 connections.append([water_H_indices[index_near],water_O_indices[index_ref[i]], water_H_names[index_near], 'WAT-WAT', site_status])
-
         return connections
 
     def generate_directed_network(self, msa_indexing=None, active_site_reference=None, active_site_radius=8.0, 
@@ -867,7 +867,7 @@ def get_clusters(list_of_networks, cluster, min_samples, coordinates=None, eps=0
     return cluster_centers
 
 def initialize_network(structure_directory, topology_file=None, trajectory_file=None, network_type='water-protein', 
-                       include_hydrogens=False, custom_selection='', active_site_reference=None, active_site_only=False,
+                       include_hydrogens=False, custom_selection=None, active_site_reference=None, active_site_only=False,
                        active_site_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.3, angle_criteria=None,
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=True,
                        cluster_coordinates=False, clustering_method='hdbscan', cluster_water_only=True, min_cluster_samples=15, eps=None, msa_indexing=True,
