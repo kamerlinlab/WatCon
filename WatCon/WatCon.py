@@ -117,6 +117,7 @@ def run_watcon(structure_type, kwargs):
         from WatCon.generate_dynamic_networks import initialize_network
 
     results = initialize_network(**kwargs)
+    return results
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Perform analysis using WatCon')

@@ -935,19 +935,19 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
         metrics = {}
         #Calculate metrics as per user input
-        if analysis_conditions['density'] == True:
+        if analysis_conditions['density'] == 'on':
             metrics['density'] = network.get_density(selection=analysis_selection)
-        if analysis_conditions['connected_components'] == True:
+        if analysis_conditions['connected_components'] == 'on':
             metrics['connected_components'] = network.get_connected_components(selection=analysis_selection)
-        if analysis_conditions['interaction_counts'] == True:
-            metrics['interaction_counts'] = network.get_interactions(selection=analysis_selection)
-        if analysis_conditions['per_residue_interactions'] == True:
+        if analysis_conditions['interaction_counts'] == 'on':
+            metrics['interaction_counts'] = network.get_interactions()
+        if analysis_conditions['per_residue_interactions'] == 'on':
             metrics['per_residue_interaction'] = network.get_per_residue_interactions(selection=analysis_selection)
-        if analysis_conditions['characteristic_path_length'] == True:
+        if analysis_conditions['characteristic_path_length'] == 'on':
             metrics['characteristic_path_length'] = network.get_CPL(selection=analysis_selection)
-        if analysis_conditions['graph_entropy'] == True:
+        if analysis_conditions['graph_entropy'] == 'on':
             metrics['entropy'] = network.get_entropy(selection=analysis_selection)
-        if analysis_conditions['clustering_coefficient'] == True:
+        if analysis_conditions['clustering_coefficient'] == 'on':
             metrics['clustering_coefficient'] = network.get_clustering_coefficient(selection=analysis_selection)
         #clustering coefficient -- https://www.annualreviews.org/content/journals/10.1146/annurev-physchem-050317-020915
 
@@ -984,7 +984,6 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         if project_networks:
             import WatCon.visualize_structures as visualize_structures
             visualize_structures.pymol_project_oxygen_network(network, filename=f'{frame_idx+2}.pml', out_path='pymol_projections', active_site_only=active_site_only)
-
         #Do not do this for large trajectories
         if return_network:
             return (network, metrics)

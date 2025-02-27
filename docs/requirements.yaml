@@ -20,7 +20,9 @@ dependencies:
   - sphinxcontrib-jsmath     
   - sphinxcontrib-qthelp     
   - sphinxcontrib-serializinghtml
-
+  - numpy
+  - pandas
+  - networkx
 
 
 
