@@ -2,7 +2,6 @@ name: docs_WatCon
 channels:
 
   - conda-forge
-  - salilab
   - defaults
 dependencies:
     # Base depends
@@ -26,7 +25,6 @@ dependencies:
   - scikit-learn
   - mdanalysis
   - scipy 
-  - modeller
   - biopython
 
     # Pip-only installs

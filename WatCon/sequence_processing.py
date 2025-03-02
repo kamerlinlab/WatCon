@@ -3,7 +3,7 @@ Functions in this file will serve the purpose to perform alignments so that cons
 
 '''
 
-from modeller import *
+#from modeller import *
 
 import numpy as np
 import pandas as pd
