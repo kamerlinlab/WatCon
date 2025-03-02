@@ -2,7 +2,7 @@ name: docs_WatCon
 channels:
 
   - conda-forge
-
+  - salilab
   - defaults
 dependencies:
     # Base depends
