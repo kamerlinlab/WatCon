@@ -6,8 +6,18 @@ def parse_inputs(filename):
     """
     Parse inputs from input file
 
-    Returns:
-    Structure type ('static'/'dynamic'), kwargs dictionary
+    Parameters
+    ----------
+    filename : str
+        Path of input file
+
+    Returns
+    ----------
+    tuple
+        - str
+            structure type (static/dynamic)
+        - dict
+            Dictionary of kwargs
     """
 
     #Initialize blank kwargs dict
@@ -111,6 +121,19 @@ def check_conditions(kwargs):
     pass
     
 def run_watcon(structure_type, kwargs):
+    """
+    Run WatCon from input file
+
+    Parameters
+    ----------
+    filename : str
+        Path of input file
+
+    Returns
+    ----------
+    tuple
+        Results from initialize network
+    """
     if structure_type == 'static':
         from WatCon.generate_static_networks import initialize_network
     else:
@@ -120,6 +143,9 @@ def run_watcon(structure_type, kwargs):
     return results
 
 def parse_arguments():
+    """
+    Parse arguments from command line
+    """
     parser = argparse.ArgumentParser(description='Perform analysis using WatCon')
     parser.add_argument('--input', type=str, help='Input file')
     parser.add_argument('--name', type=str, help='Identifiable name', default='results')

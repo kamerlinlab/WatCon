@@ -20,7 +20,41 @@ from WatCon.visualize_structures import project_clusters
 import WatCon.residue_analysis as residue_analysis
 
 class WaterAtom:
+    """
+    Object for storing information of atoms in water molecules
+
+    Attributes
+    ----------
+    index : int
+        PDB atom index
+    coordinates : tuple
+        Coordinates of atom
+    resname : str
+        Name of residue. Default is WAT.
+    name: str
+        Name of atom
+    resid: int
+        Residue number of atom
+    """
     def __init__(self, index, atom_name, residue_number, x, y, z):
+        """
+        Initialize the class
+
+        Parameters
+        ----------
+        index : int
+            PDB atom index
+        atom_name: str
+            Name of atom
+        residue_number: int
+            Residue number of atom
+        x: float
+            x-coordinate of position
+        y: float
+            y-coordinate of position
+        z: float
+            z-coordinate of position
+        """
         self.index = index
         self.coordinates = (x, y, z)
         self.resname = 'WAT'
@@ -28,7 +62,41 @@ class WaterAtom:
         self.resid = residue_number
 
 class WaterMolecule:
+    """
+    Object for storing information of water molecules
+
+    Attributes
+    ----------
+    index : int
+        PDB atom index
+    H1 : WaterAtom
+        WaterAtom object for first hydrogen
+    H2 : WaterAtom
+        WaterAtom object for second hydrogen
+    O : WaterAtom
+        WaterAtom object for oxygen
+    resname : str
+        Name of residue. Default is WAT.
+    resid: int
+        Residue number of water molecule
+    """
     def __init__(self, index, O: WaterAtom, H1: WaterAtom, H2: WaterAtom, residue_number):
+        """
+        Initialize the class
+
+        Parameters
+        ----------
+        index : int
+            PDB atom index
+        O: WaterAtom
+            WaterAtom object for oxygen atom
+        H1: WaterAtom 
+            WaterAtom object for first hydrogen
+        H2: WaterAtom
+            WaterAtom obejct for second hydrogen
+        residue_number: int
+            Residue number of atom
+        """
         self.index = index
         self.H1 = H1
         self.H2 = H2
@@ -37,7 +105,45 @@ class WaterMolecule:
         self.resid = residue_number
 
 class OtherAtom:
+    """
+    Object for storing information of other atoms (not waters)
+
+    Attributes
+    ----------
+    index : int
+        PDB atom index
+    coordinates : tuple
+        Coordinates of atom
+    resname : str
+        Name of residue.
+    msa_resid: int
+        Common residue index from MSA    
+    resid: int
+        Residue number of atom    
+    name: str
+        Name of atom
+    """
     def __init__(self, index, atom_name, residue_name, x, y, z, residue_number, msa_residue_number, hbonding):
+        """
+        Initialize the class
+
+        Parameters
+        ----------
+        index : int
+            PDB atom index
+        atom_name: str
+            Name of atom
+        residue_name: str
+            Name of residue
+        x: float
+            x-coordinate of position
+        y: float
+            y-coordinate of position
+        z: float
+            z-coordinate of position
+        residue_number: int
+            Residue number of atom
+        """
         self.index = index
         self.coordinates = (x, y, z)
         self.resname = residue_name
@@ -47,20 +153,59 @@ class OtherAtom:
         self.hbonding = hbonding
   
 class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent maybe
+    """
+    Object for storing information regarding water-water and water-protein connections
+
+    Attributes
+    ----------
+    water_molecules : list
+        List of WaterMolecule objects
+    protein_atoms : list
+        List of OtherAtom objects
+    connections : list
+        List of connections among atoms
+    active_site: list
+        Collection of WaterMolecule and OtherAtom objects making up a user-defined active site   
+    graph: NetworkX graph object
+        NetworkX graph object containing nodes and edges as defined by self.connections 
+    """
     def __init__(self):
+        """
+        Initialize the class
+        """
         self.water_molecules = []
         self.protein_atoms = []
-        self.protein_subset = []
-        self.molecules = []
+        #self.protein_subset = []
+        #self.molecules = []
         self.connections = None
         self.active_site = None
         self.graph = None
 
     def add_atom(self, index, atom_name, residue_name, x, y, z, residue_number=None, msa_residue_number=None):
         """
-        Add protein/misc atom
+        Add atom (OtherAtom object)
 
-        Returns:
+        Parameters
+        ----------
+        index : int
+            PDB atom index
+        atom_name: str
+            Name of atom
+        residue_name : str
+            Name of residue.
+        x : float
+            x-coordinate of atom
+        y : float
+            y-coordinate of atom
+        z : float
+            z-coordinate of atom
+        residue_number: int
+            Residue number of atom  
+        msa_residue_number: int
+            Common residue index from MSA    
+
+        Returns
+        ----------
         None
         """
         if residue_name == 'WAT' or residue_name == 'HOH' or residue_name == 'SOL': #these names are hardcoded
@@ -79,7 +224,23 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         """
         Add water molecule
 
-        Returns: 
+        Parameters
+        ----------
+        index : int
+            PDB atom index
+        atom_name: str
+            Name of atom
+        o: MDAnalysis atom object
+            MDAnalysis atom object corresponding to water oxygen
+        residue_number: int
+            Residue number of water  
+        h1: MDAnalysis atom object
+            MDAnalysis atom object corresponding to first water hydrogen
+        h2: MDAnalysis atom object
+            MDAnalysis atom object corresponding to second water hydrogen
+
+        Returns
+        ----------
         None
         """
         o = WaterAtom(o.index, 'O', residue_number, *o.position)
@@ -90,18 +251,28 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
     def select_active_site(self, reference, box, active_site_radius=8.0):
         """
-        Selects active site atoms based on distance to reference atoms.
+        Select active site atoms based on distance to reference atoms.
 
-        Parameters:
-        - reference: AtomGroup (or list of atoms) defining the reference
-        - box: Simulation box (for PBC)
-        - dist_cutoff: default 8.0, Distance cutoff for selection
+        Parameters
+        ----------
+        reference : MDAnalysis AtomGroup object
+            MDAnalysis Atom group (or list of atoms) defining the reference.
+        box : array-like
+            Simulation box used for periodic boundary conditions (PBC).
+        dist_cutoff : float, optional
+            Distance cutoff for selection. Default is 8.0 Å.
 
-        Returns:
-        - self.active_site
-        - active_site protein atoms
-        - active_site water atoms
+        Returns
+        -------
+        tuple
+            - self.active_site : list  
+              Selected active site atoms.  
+            - active_site_protein : list  
+              Active site protein atoms.  
+            - active_site_water : list  
+              Active site water atoms.  
         """
+
         #Create empty set for active site atoms
         active_site_atoms = []
 
@@ -143,24 +314,36 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
     def find_connections(self, dist_cutoff=3.3, water_active=None, protein_active=None, active_site_only=False, water_only=False):
         """
-        Find shortest connections using a K-D Tree.
+        Find the shortest connections using a K-D Tree.
 
-        Parameters:
-        - dist_cutoff: Distance cutoff (default 3.3)
-        - water_active: Active site water molecule selection
-        - protein_active: Active site protein molecule selection
-        - active_site_only: Only find connections among active site atoms
-        - water_only: Only find connections among waters
+        Parameters
+        ----------
+        dist_cutoff : float, optional
+            Distance cutoff for connections. Default is 3.3 Å.
+        water_active : list
+            Selection of active site water molecules.
+        protein_active : list
+            Selection of active site protein molecules.
+        active_site_only : bool, optional
+            If True, only find connections among active site atoms. Default is False.
+        water_only : bool, optional
+            If True, only find connections among waters. Default is False.
 
-        Returns:
-        List of connections where:
-        - connections[0] = index1
-        - connections[1] = index2
-        - connections[2] = atom name (of index1)
-        - connections[3] = 'WAT-WAT' or 'WAT-PROT'
-        - connections[4] = 'active_site' or 'not_active_site'
+        Returns
+        -------
+        list of tuples
+            Each connection is represented as a tuple with the following elements:
+            - connections[0] : int  
+              Index of the first atom.
+            - connections[1] : int  
+              Index of the second atom.
+            - connections[2] : str  
+              Atom name of the first atom.
+            - connections[3] : str  
+              Type of interaction ('WAT-WAT' or 'WAT-PROT').
+            - connections[4] : str  
+              Whether the interaction is in the active site ('active_site') or not ('not_active_site').
         """
-
         connections = []
 
         # Select active site atoms if specified
@@ -217,26 +400,42 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         return connections
 
 
-    def find_directed_connections(self, dist_cutoff=2.0, water_active=None, protein_active=None, active_site_only=False, water_only=False, angle_criteria=None):
+    def find_directed_connections(self, dist_cutoff=2.0, water_active=None, protein_active=None, active_site_only=False, 
+                                    water_only=False, angle_criteria=None):
         """
-        Find directed connections using a K-D Tree.
+        Find the shortest directed connections using a K-D Tree.
 
-        Parameters:
-        - dist_cutoff: Distance cutoff (default 2.5)
-        - water_active: Active site water molecule selection
-        - protein_active: Active site protein molecule selection
-        - active_site_only: Only find connections among active site atoms
-        - water_only: Only find connections among waters
-        - angle_criteria: Cutoff angle to define HBonds
+        Parameters
+        ----------
+        dist_cutoff : float, optional
+            Distance cutoff for connections. Default is 2.0 Å.
+        water_active : list
+            Selection of active site water molecules.
+        protein_active : list
+            Selection of active site protein molecules.
+        active_site_only : bool, optional
+            If True, only find connections among active site atoms. Default is False.
+        water_only : bool, optional
+            If True, only find connections among waters. Default is False.
+        angle_criteria: float, optional
+            Additional angle criteria for defining hydrogen bonds. Default is None.
 
-        Returns:
-        List of connections in the format:
-        - connections[0] = index1
-        - connections[1] = index2
-        - connections[2] = atom name (of index1)
-        - connections[3] = 'WAT-WAT' or 'WAT-PROT'
-        - connections[4] = 'active_site' or 'not_active_site'
+        Returns
+        -------
+        list of tuples
+            Each connection is represented as a tuple with the following elements:
+            - connections[0] : int  
+              Index of the first atom.
+            - connections[1] : int  
+              Index of the second atom.
+            - connections[2] : str  
+              Atom name of the first atom.
+            - connections[3] : str  
+              Type of interaction ('WAT-WAT' or 'WAT-PROT').
+            - connections[4] : str  
+              Whether the interaction is in the active site ('active_site') or not ('not_active_site').
         """
+
 
         # Initialize empty list for connections
         connections = []
@@ -452,12 +651,26 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         """
         Generate network based only on oxygens -- direct comparability to static structure networks
 
-        Parameters:
-        - active_site_reference: MDAnalysis atom selection language
-        - water_only: creates a network with only waters
+        Parameters
+        ----------
+        msa_indexing : list, optional
+            list of MSA residue indexes, default is None
+        active_site_reference: MDAnalysis AtomGroup object, optional
+            Reference to define active site. Default is None.
+        active_site_radius: float, optional
+            Radius to define active site from active_site_reference. Default is 8.0 Å
+        active_site_only : bool, optional
+            If True, only find connections among active site atoms. Default is False.
+        water_only : bool, optional
+            If True, only find connections among waters. Default is False.
+        max_connection_distance: float, optional
+            Distance cutoff for connections. Default is 2.0 Å.
 
-        Returns:
-        networkx graph object
+
+        Returns
+        -------
+        self.graph
+            NetworkX graph object describing the network.
         """
 
         #Initialize graph
@@ -495,7 +708,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                 G.add_node(molecule.O.index, pos=molecule.O.coordinates, atom_category='WAT', MSA=None) #have nodes on all oxygens
 
             if water_only == False:
-                for molecule in self.protein_subset:
+                #for molecule in self.protein_subset:
+                for molecule in self.protein_atoms:
                     MSA_index = MSA_indices[molecule.resid-1]  
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=None)
             
@@ -510,17 +724,32 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         return self.graph
 
     def generate_directed_network(self, box, msa_indexing=None, active_site_reference=None, active_site_radius=8.0, 
-                                  active_site_only=False, water_only=False, angle_criteria=None, max_connection_distance=3.0):
+                                  active_site_only=False, water_only=False, angle_criteria=None, max_connection_distance=2.0):
         """
         Generate directed graph using H -> O directionality
 
-        Parameters:
-        - active_site_reference: Any MDAnalysis atomselection language
-        - active_site_only: Determines whether networks contain only active site atoms or all
-        - angle_criteria: Angle cutoff (degrees)
+        Parameters
+        ----------
+        msa_indexing : list, optional
+            list of MSA residue indexes, default is None
+        active_site_reference: MDAnalysis AtomGroup object, optional
+            Reference to define active site. Default is None.
+        active_site_radius: float, optional
+            Radius to define active site from active_site_reference. Default is 8.0 Å
+        active_site_only : bool, optional
+            If True, only find connections among active site atoms. Default is False.
+        water_only : bool, optional
+            If True, only find connections among waters. Default is False.
+        angle_criteria: float, optional
+            Additional angle criteria to define hydrogen bonds. Defualt is None
+        max_connection_distance: float, optional
+            Distance cutoff for connections. Default is 2.0 Å.
 
-        Returns:
-        networkx graph object
+
+        Returns
+        -------
+        self.graph
+            NetworkX graph object describing the network.
         """
         G = nx.DiGraph() 
  
@@ -557,7 +786,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                 G.add_node(molecule.O.index, pos=molecule.O.coordinates, atom_category='WAT', MSA=None) #have nodes on all oxygens
 
             if water_only == False:
-                for molecule in self.protein_subset:
+                #for molecule in self.protein_subset:
+                for molecule in protein_atoms:
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
             
             #Add edges
@@ -570,15 +800,25 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
     def get_density(self, selection='all'):
         """
-        Requires self.graph to exist
-        Calculates density as $N_{edges}/((N_{nodes}*N_{nodes}-1)/2)$ (ratio between edges and possible edges)
+        Calculate the density of the graph.
 
-        Parameters:
-        - selection: 'all', 'active_site', or 'not_active_site'
+        Requires `self.graph` to exist. The density is calculated as:
 
-        Returns:
+        .. math::
+            \\text{density} = \\frac{N_{edges}}{(N_{nodes} * (N_{nodes} - 1) / 2)}
+
+        This represents the ratio between actual edges and possible edges.
+
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+
+        Returns
+        -------
         float
-        """       
+            The density of the selected network.
+        """   
         #Choose all subgraphs under particular criteria
         if selection=='all':
             S = self.graph
@@ -594,14 +834,20 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
     def get_connected_components(self, selection='all'):
         """
-        Requires self.graph to exist
-        Uses weakly_connected_components if graph is directed and connected_components if graph is undirected
+        Compute the connected components of the graph.
 
-        Parameters:
-        - selection: 'all', 'active_site', or 'not_active_site'
+        Requires `self.graph` to exist. Uses `weakly_connected_components` if the graph is directed, 
+        and `connected_components` if the graph is undirected.
 
-        Returns:
-        Numpy array of connected components
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of connected components in the selected network.
         """
         #Initiate empty array for connected components
         components = []
@@ -625,27 +871,60 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         components = np.array(components).reshape(-1,1)
         return components
     
-    def get_interactions(self):
-        interaction_dict = residue_analysis.get_interaction_counts(self)
+    def get_interactions(self, selection='all'):
+        """
+        Get a dictionary of water-water and protein-water interactions.
+
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+
+        Returns
+        -------
+        dict
+            A dictionary where keys are interaction types (e.g., 'WAT-WAT', 'WAT-PROT') 
+            and values are the number of occurrences.
+        """
+        interaction_dict = residue_analysis.get_interaction_counts(self, selection)
         return(interaction_dict)
     
     def get_per_residue_interactions(self, selection='all'):
+        """
+        Get a dictionary of interactions per residue.
+
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+
+        Returns
+        -------
+        dict
+            A dictionary where keys are residue identifiers and values 
+            are the number of interactions per residue.
+        """
         residue_interaction_dict = residue_analysis.get_per_residue_interactions(self, selection)
         return(residue_interaction_dict)
     
     def get_CPL(self, selection='all', calculate_path='all', exclude_single_points=False):
         """
-        Calculate characteristic path length (average shortest path length)
+        Calculate the characteristic path length (CPL).
 
-        Does not include connected components of length 1
+        The CPL is the average shortest path length in the network. 
+        Components of length 1 (isolated nodes) are not included in the calculation.
 
-        Parameters:
-        - selection: 'all', 'active_site', or 'not_active_site'
-        - calculate_path: 'all' or 'longest'
-        - exclude_single_points: Indicate whether to exclude isolated points in connected components
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+        exclude_single_points : bool, optional
+            If True, excludes isolated nodes from the calculation. Default is False.
 
-        Returns:
-        - CPL (float)
+        Returns
+        -------
+        float
+            The characteristic path length of the selected network.
         """
         #Choose all subgraphs under particular criteria
         if selection=='all':
@@ -693,14 +972,20 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
     def get_entropy(self, selection='all'):
         """
-        Calculate graph entropy -- method taken from  https://stackoverflow.com/questions/70858169/networkx-entropy-of-subgraphs-generated-from-detected-communities
+        Calculate the graph entropy.
 
-        Parameters:
-        - selection: 'all', 'active_site', or 'not_active_site'
+        The method is adapted from:
+        https://stackoverflow.com/questions/70858169/networkx-entropy-of-subgraphs-generated-from-detected-communities
 
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
 
-        Returns:
-        Graph entropy (float)
+        Returns
+        -------
+        float
+            The computed graph entropy.
         """
         def degree_distribuiton(G):
             vk = dict(G.degree())
@@ -734,11 +1019,20 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
     
     def get_all_coordinates(self, selection='all', water_only=True):
         """
-        Collect all coordinates from WaterNetwork object
+        Retrieve all atomic coordinates, useful for clustering.
 
-        Parameters:
-        - selection: 'all', 'active_site', or 'not_active_site'
-        - water_only: Indicate whether to use water coordinates only
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of atoms to include.
+        water_only : bool, optional
+            If True, only includes water molecule coordinates. If False, includes both 
+            water and interacting protein atoms. Default is False.
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of coordinates for the selected atoms.
         """
         #Choose all subgraphs under particular criteria
         if selection=='all':
@@ -746,7 +1040,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             coords = [np.array(f.O.coordinates) for f in self.water_molecules]
 
             if not water_only:
-                coords.extend([np.array(f.coordinates) for f in self.protein_subset])
+                #coords.extend([np.array(f.coordinates) for f in self.protein_subset])
+                coords.extend([np.array(f.coordinates) for f in self.protein_atoms])
 
         else:
             #Find all coordinates -- only water oxygens
@@ -759,9 +1054,38 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         return coords
 
 
-def get_clusters(coordinates, cluster='optics', min_samples=10, eps=0.0, n_jobs=1):
+def get_clusters(coordinates, cluster, min_samples=10, eps=0.0, n_jobs=1, filename_base='DYNAMIC_CLUSTER'):
+    """
+    Get clusters over a series of WaterNetwork objects.
+
+    Parameters
+    ----------
+    coordinates : array-like
+        Array of coordinates combined for all networks
+    cluster : {'hdbscan', 'dbscan', 'optics'}
+        Clustering method
+    min_samples : int, optional
+        Minimum number of points per cluster. Default is 10
+    coordinates : numpy.ndarray, optional
+        Collection of coordinates
+    eps: float, optional
+        eps value for neighborhood size when clustering. Default is 0.0
+    n_jobs: int, optional
+        Available cores for parallelization. Default is 1 (no parallelization)
+    filename_base: str, optional
+        Filename base for PDB of cluster centers
+
+    Returns
+    ----------
+    tuple
+        - List of cluster labels
+        - Dictionary describing cluster_centers
+    """
     from WatCon.find_conserved_networks import cluster_coordinates_only
+    from WatCon.visualize_structures import project_clusters
     cluster_labels, cluster_centers = cluster_coordinates_only(coordinates, cluster, min_samples, eps, n_jobs)
+    project_clusters(cluster_centers, filename_base=filename_base, separate_files=False)
+
     return cluster_labels, cluster_centers
 
 
@@ -769,13 +1093,46 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
                               active_site_reference, active_site_radius, water_name, msa_indexing, 
                               active_site_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0):
     """
-    Function to return calculated network per frame
-    
-    All arguments are initially given to initialize_network
+    Extract and compute a water network for each frame.
 
-    Returns:
-    WaterNetwork object
+    This function initializes a network based on the provided parameters and returns a 
+    `WaterNetwork` object representing the computed network.
+
+    Parameters
+    ----------
+    pdb_file : str
+        Path to the topology file.
+    trajectory_file: str
+        Path to the trajectory file
+    frame_idx: int
+        Index of given frame
+    network_type : {'water-water', 'water-protein'}
+        Type of network to construct.
+    custom_selection : str or None
+        MDAnalysis selection string for custom residue selections.
+    active_site_reference : str or None
+        MDAnalysis selection string defining the reference for the active site.
+    active_site_radius : float
+        Radius (in Å) to define the active site region.
+    water_name : str
+        Name of water molecules in the system.
+    msa_indexing : bool
+        Whether to use MSA (multiple sequence alignment) indexing.
+    active_site_only : bool, optional
+        If True, only includes active site atoms in the network. Default is False.
+    directed : bool, optional
+        If True, constructs a directed network. Default is False.
+    angle_criteria : float or None, optional
+        Angle cutoff criteria for hydrogen-bonding structures. Default is None.
+    max_connection_distance : float, optional
+        Maximum distance (in Å) for defining connections in the network. Default is 3.0.
+
+    Returns
+    -------
+    WaterNetwork
+        A `WaterNetwork` object representing the computed network for the given PDB.
     """
+ 
     #Allow for custom residues in protein selection
     if custom_selection is None:
         custom_sel = ''
@@ -855,48 +1212,88 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
 
 def initialize_network(topology_file, trajectory_file, structure_directory='.', network_type='water-protein', 
                        include_hydrogens=False, custom_selection=None, active_site_reference=None, active_site_only=False, 
-                       active_site_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.3, angle_criteria=None,
+                       active_site_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.0, angle_criteria=None,
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=False, 
                        cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True, 
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=False,
                        MSA_reference_pdb=None, water_reference_resids=None, num_workers=4):
     
     """
-    Initialize network of choice. 
+    Initialize and compute all water networks per frame for a trajectory.
 
-    Parameters:
-    - topology_file: Name of topology file
-    - trajectory_file: Name of trajectory file
-    - structure_directory: Name of directory which contains structure files
-    - network_type: 'water-water' or 'water-protein'
-    - include_hydrogens: Indicate whether to make a directed graph with hydrogens
-    - custom_selection: Any MDAnalysis selection language if you have custom residues (etc.) which you want included in your protein selection
-    - active_site_reference: Any MDAnalysis selection language to define the center of your area of interest
-    - active_site_only: Indicate whether to only include active site atoms
-    - active_site_radius: Radius of active site centered on reference
-    - water_name: Name of water residues, by default WatCon will recognize SOL, WAT, H2O, HOH
-    - multi_model_pdb: Indicate whether pdb file has multiple models (most traditionally for NMR structures)
-    - max_distance: Maximum distance between water atoms for an interaction to exist
-    - angle_criteria: Specify extra angle criteria for calculating HBonds if hydrogens are present (recommend 150)
-    - analysis_conditions: 'all' or dict specifying which analyses to perform
-    - analysis_selection: 'all', 'active_site', or 'not_active_site' -- indicate what atoms to perform analysis on
-    - project_networks: Indicate whether to generate pymol pml files for each network
-    - return_network: Indicate whether to return the WaterNetwork objects (not recommended for large trajectories)
-    - cluster_coordinates: Indicate whether to perform clustering on combined network
-    - clustering_method: Clustering method -- 'hdbscan', 'dbscan', or 'optics'
-    - min_cluster_samples: Minimum number of samples for cluster
-    - eps: Eps distance for clustering
-    - msa_indexing: Indicate whether to utilize/perform an MSA
-    - alignment_file: Alignment file (PIR format)
-    - combined_fasta: Combined fasta file
-    - fasta_directory: Directory of fasta files
-    - classify_water: Indicate whether to classify waters by angles and MSA
-    - MSA_reference_pdb: PDB used as a reference to select residues
-    - water_reference_resids: Resid IDs for water angle classification references
-    - num_workers: Number of cores avaialble for parallelization
+    Parameters
+    ----------
+    structure_directory : str
+        Path to the directory containing structure files.
+    topology_file : str or None, optional
+        Path to the topology file. Default is None.
+    trajectory_file : str or None, optional
+        Path to the trajectory file. Default is None.
+    network_type : {'water-water', 'water-protein'}, optional
+        Type of network to construct. Default is 'water-protein'.
+    include_hydrogens : bool, optional
+        If True, includes hydrogens in the network construction. Default is False.
+    custom_selection : str or None, optional
+        MDAnalysis selection string for defining a custom protein selection. Default is None.
+    active_site_reference : str or None, optional
+        MDAnalysis selection string defining the center of the active site. Default is None.
+    active_site_only : bool, optional
+        If True, only includes active site atoms in the computed network. This significantly 
+        reduces computational cost, especially for directed networks. Default is False.
+    active_site_radius : float, optional
+        Radius (in Å) defining the active site. Default is 8.0.
+    water_name : str or None, optional
+        Name of water molecules in the system. Default is None.
+    multi_model_pdb : bool, optional
+        If True, interprets the input PDB file as a multi-model PDB. Default is False.
+    max_distance : float, optional
+        Maximum distance (in Å) for defining network connections. Default is 3.0.
+    angle_criteria : float or None, optional
+        Angle cutoff criteria for hydrogen bonding. Default is None.
+    analysis_conditions : {'all', 'active_site', 'not_active_site'}, optional
+        Specifies which subset of the system to analyze. Default is 'all'.
+    analysis_selection : {'all', 'active_site', 'not_active_site'}, optional
+        Specifies the selection criteria for the network analysis. Default is 'all'.
+    project_networks : bool, optional
+        If True, generates PyMOL visualization files of the computed networks. Default is False.
+    return_network : bool, optional
+        If True, returns the computed network. Default is False.
+    cluster_coordinates : bool, optional
+        If True, performs clustering analysis on the network. Default is False.
+    clustering_method : {'hdbscan', 'dbscan', 'kmeans'}, optional
+        Clustering method to use if clustering is enabled. Default is 'hdbscan'.
+    cluster_water_only : bool, optional
+        If True, clusters only water molecules, excluding protein atoms. Default is True.
+    min_cluster_samples : int, optional
+        Minimum number of points per cluster for clustering algorithms. Default is 15.
+    eps : float or None, optional
+        Epsilon parameter for DBSCAN clustering. Default is None.
+    msa_indexing : bool, optional
+        If True, performs MSA (multiple sequence alignment) indexing. Default is True.
+    alignment_file : str, optional
+        Path to the alignment file. If the file does not exist, it will be created. Default is 'alignment.txt'.
+    combined_fasta : str, optional
+        Name of the combined FASTA file. Default is 'all_seqs.fa'.
+    fasta_directory : str, optional
+        Directory containing individual FASTA files. Default is 'fasta'.
+    classify_water : bool, optional
+        If True, classifies water molecules based on MSA indexing. Default is True.
+    MSA_reference_pdb : str or None, optional
+        Path to the reference PDB file for MSA-based selections. Default is None.
+    water_reference_resids : list or None, optional
+        List of residue indices used for water angle analysis in a specific PDB file. Default is None.
+    num_workers : int, optional
+        Number of CPU cores to use for parallel computation. Default is 4.
 
-    Returns:
-    Dictionary of calculated metrics per trajectory frame, cluster centers (if clustering is on)
+    Returns
+    -------
+    tuple
+        - networks: list, optional 
+            List of WaterNetwork objects (if return_network=True)
+        - metrics: dict
+            Dictionary of calculated metircs
+        - centers: dict
+            Dictionary of cluster centers (if clustering is on)
     """
     def process_frame(frame_idx, coords=None, ref_coords=None, residues=None):
         """
@@ -1060,7 +1457,6 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         combined_coordinates = np.concatenate([arr for arr in coordinates], axis=0)
 
         cluster_labels, cluster_centers = get_clusters(combined_coordinates, cluster=clustering_method, min_samples=min_cluster_samples, eps=eps, n_jobs=num_workers)
-        project_clusters(cluster_centers, filename_base='MD', separate_files=False)
         return (network_metrics, cluster_centers)
 
     #Return only metrics if no clustering
