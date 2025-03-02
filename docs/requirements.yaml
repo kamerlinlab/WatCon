@@ -23,7 +23,9 @@ dependencies:
   - numpy
   - pandas
   - networkx
-
+  - scikit-learn
+  - mdanalysis
+  - scipy 
 
 
     # Pip-only installs
