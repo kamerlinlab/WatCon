@@ -9,16 +9,23 @@ import networkx as nx
 
 def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_projections', active_site_only=False, water_only=False):
     """
-    Create .pml file to showcase calculated network
+    Generate a PyMOL (.pml) file to visualize the calculated network.
 
-    Parameters:
-    - network: WaterNetwork object
-    - filename: Output filename
-    - out_path: Directory for output
-    - active_site_only: Indicate whether to include only active site connections or all connections
-    - water_only: Indiacte whether to show connections among waters only
+    Parameters
+    ----------
+    network : WaterNetwork
+        The WaterNetwork object representing the network.
+    filename : str
+        Name of the output .pml file.
+    out_path : str
+        Directory where the output file will be saved.
+    active_site_only : bool, optional
+        Whether to include only active site connections. Default is False.
+    water_only : bool, optional
+        Whether to show only water-water connections. Default is False.
 
-    Returns:
+    Returns
+    -------
     None
     """
 
@@ -55,16 +62,21 @@ def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_
 
 def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=True, b_factors=None):
     """
-    Create pdb file to visualize cluster centers
+    Generate a PDB file to visualize cluster centers.
 
-    Parameters:
-    - cluster_centers: List of coordinates or cluster centers
-    - filename_base: Naming scheme to use for outputted pdb
-    - separate_files (True/False): Indicate whether to create a separate xyz for each 
-                                   cluster or one combined pdb
-    - b_factors: Optional list of values replacing the B-factor column
+    Parameters
+    ----------
+    cluster_centers : array-like
+        List of coordinates representing cluster centers.
+    filename_base : str
+        Naming scheme to use for the outputted PDB file.
+    separate_files : bool, optional
+        Whether to create separate XYZ files for each cluster or a single combined PDB (default is True).
+    b_factors : array-like, optional
+        Optional list of values to replace the B-factor column.
 
-    Returns:
+    Returns
+    -------
     None
     """
     
@@ -98,13 +110,17 @@ def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=Tr
 
 def export_graph_to_pdb(graph, output_file):
     """
-    Create a pdb file with dummy oxygen atoms at coordinates within a given graph
+    Generate a PDB file with dummy oxygen atoms at the coordinates of a given graph.
 
-    Parameters:
-    - graph: networkx graph object
-    - output_file: Name of output file
+    Parameters
+    ----------
+    graph : networkx.Graph
+        The NetworkX graph containing node coordinates.
+    output_file : str
+        Name of the output PDB file.
 
-    Returns:  
+    Returns
+    -------
     None
     """
 
@@ -131,11 +147,18 @@ def export_graph_to_pdb(graph, output_file):
 
 def save_xyz(network, filename='STATE.xyz'):
     """
-    Create xyz file with graph coordinates
+    Generate an XYZ file containing graph coordinates.
 
-    Parameters:
-    - network: WaterNetwork object
-    - filename: Name of output file
+    Parameters
+    ----------
+    network : WaterNetwork
+        The WaterNetwork object containing graph data.
+    filename : str
+        Name of the output XYZ file.
+
+    Returns
+    -------
+    None
     """
     if not output_file.endswith('.xyz'):
         output_file = f"{output_file}.xyz"

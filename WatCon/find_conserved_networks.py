@@ -12,13 +12,17 @@ import pandas as pd
 
 def combine_graphs(list_of_graphs):
     """
-    Combine networkx graph objects into one graph
+    Combine multiple NetworkX graph objects into a single graph.
 
-    Parameters:
-    - list_of_graphs: List of networkx graph objects
+    Parameters
+    ----------
+    list_of_graphs : list of networkx.Graph
+        List of NetworkX graph objects to be merged.
 
-    Returns:
-    - Combined graph
+    Returns
+    -------
+    networkx.Graph
+        A combined graph containing all nodes and edges from input graphs.
     """
     U = nx.disjoint_union_all(list_of_graphs)
     return U
@@ -26,15 +30,22 @@ def combine_graphs(list_of_graphs):
 
 def cluster_nodes(combined_graph, cluster='hdbscan', min_samples=10):
     """
-    Cluster nodes positions from combined networkx graph
+    Cluster node positions from a combined NetworkX graph.
 
-    Parameters: 
-    - combined_graph: Combined graph for clustering
-    - cluster: Clustering method, can be 'optics', 'dbscan', or 'hdbscan'
-    - min_samples: Minimum samples for cluster
+    Parameters
+    ----------
+    combined_graph : networkx.Graph
+        A combined graph used for clustering.
+    cluster : str
+        Clustering method, can be 'optics', 'dbscan', or 'hdbscan'.
+    min_samples : int
+        Minimum number of samples required for a cluster.
 
-    Returns:
-    - Cluster labels, cluster centers
+    Returns
+    -------
+    tuple
+        - Cluster labels (array-like)
+        - Cluster centers (dict)
     """
     node_positions = nx.get_node_attributes(combined_graph, 'pos')
     positions = [pos for (node, pos) in node_positions.items()]
@@ -63,15 +74,22 @@ def cluster_nodes(combined_graph, cluster='hdbscan', min_samples=10):
 
 def cluster_coordinates_only(coordinate_list, cluster='hdbscan', min_samples=10, eps=0.0, n_jobs=1):
     """
-    Cluster coordinates only
+    Cluster a set of coordinates.
 
-    Parameters:
-    - coordinate_list: Combined list of all coordinates
-    - cluster: Clustering method, can be 'optics', 'dbscan', or 'hdbscan'
-    - min_samples: Minimum samples for cluster
+    Parameters
+    ----------
+    coordinate_list : list of array-like
+        A combined list of all coordinates to be clustered.
+    cluster : str
+        Clustering method, can be 'optics', 'dbscan', or 'hdbscan'.
+    min_samples : int
+        Minimum number of samples required for a cluster.
 
-    Returns:
-    - Cluster labels, cluster centers
+    Returns
+    -------
+    tuple
+        - Cluster labels (array-like)
+        - Cluster centers (dict)
     """
     try:
         coordinate_list = np.array(coordinate_list).reshape(-1,3)
@@ -111,14 +129,19 @@ def cluster_coordinates_only(coordinate_list, cluster='hdbscan', min_samples=10,
 
 def find_commonality(networks, centers, names):
     """
-    Find commonality of a list of networks to a summary network created from clustering
+    Find the commonality of a list of networks relative to a summary network created from clustering.
 
-    Parameters:
-    - networks: List of WaterNetwork objects
-    - centers: Locations of clustered centers
+    Parameters
+    ----------
+    networks : list of WaterNetwork
+        List of WaterNetwork objects to be analyzed.
+    centers : array-like
+        Locations of clustered centers.
 
-    Returns:
-    - Dictionary of calculated commonalities for each network 
+    Returns
+    -------
+    dict
+        A dictionary containing calculated commonalities for each network.
     """
 
     commonality_dict = {}
@@ -142,16 +165,23 @@ def find_commonality(networks, centers, names):
 
 def identify_conserved_water_clusters(networks, centers, dist_cutoff=1.0, filename_base='CLUSTERS'):
     """
-    Create dictionary of conservation of clusters and create pdb of clusters
+    Create a dictionary of cluster conservation and generate a PDB file of clusters.
 
-    Parameters:
-    - networks: List of WaterNetwork object
-    - centers: List of xyz coordinates of cluster centers
-    - dist_cutoff: Distance cutoff to classify a water as within a cluster
-    - filename_base: Name to save the projected clusters
+    Parameters
+    ----------
+    networks : list of WaterNetwork
+        List of WaterNetwork objects to analyze.
+    centers : array-like
+        List of XYZ coordinates representing cluster centers.
+    dist_cutoff : float
+        Distance cutoff to classify a water molecule as part of a cluster.
+    filename_base : str
+        Base filename for saving projected clusters.
 
-    Returns:
-    - Dictionary of cluster centers with counts of included waters
+    Returns
+    -------
+    dict
+        A dictionary mapping cluster centers to the count of included waters.
     """
     from sklearn.preprocessing import MinMaxScaler
     from WatCon.visualize_structures import project_clusters
@@ -182,15 +212,21 @@ def identify_conserved_water_clusters(networks, centers, dist_cutoff=1.0, filena
 
 def create_clustered_network(clusters, max_connection_distance, create_graph=True):
     """
-    Create WaterNetwork object from cluster centers
+    Create a WaterNetwork object from cluster centers.
 
-    Parameters:
-    - clusters: List of xyz coordinates of clusters
-    - max_connection_distance: Maximum distance between two clusters to interact
-    - create_graph: Create a networkx object from the clustered WaterNetwork
+    Parameters
+    ----------
+    clusters : array-like
+        List of XYZ coordinates of cluster centers.
+    max_connection_distance : float
+        Maximum allowed distance between two clusters to form an interaction.
+    create_graph : bool, optional
+        Whether to create a NetworkX graph from the clustered WaterNetwork. Default is True.
 
-    Returns;
-    - WaterNetwork object
+    Returns
+    -------
+    WaterNetwork
+        A WaterNetwork object representing the clustered water network.
     """
     from WatCon.generate_static_networks import WaterNetwork, WaterAtom, WaterMolecule
 
@@ -216,17 +252,25 @@ def create_clustered_network(clusters, max_connection_distance, create_graph=Tru
 
 def identify_conserved_water_interactions_clustering(networks, clusters, max_connection_distance=3.0, dist_cutoff=1.0, filename_base='CLUSTER'):
     """
-    Create dictionary which ranks water-water interactions in relation to clustering
+    Rank water-water interactions in relation to clustering.
 
-    Parameters:
-    - networks: List of WaterNetwork objects
-    - centers: List of xyz coordinates of cluster centers
-    - max_connection_distance: Maximum distance between two clusters to interact
-    - dist_cutoff: Distance cutoff to classify a water as within a cluster
-    - filename_base: Name to save the projected clusters
+    Parameters
+    ----------
+    networks : list of WaterNetwork
+        List of WaterNetwork objects to be analyzed.
+    centers : array-like
+        List of XYZ coordinates of cluster centers.
+    max_connection_distance : float
+        Maximum allowed distance between two clusters to form an interaction.
+    dist_cutoff : float
+        Distance cutoff to classify a water molecule as part of a cluster.
+    filename_base : str
+        Base filename for saving projected clusters.
 
-    Returns:
-    - Dictionary of cluster interactions with counts of included waters
+    Returns
+    -------
+    dict
+        A dictionary mapping cluster interactions to the count of included waters.
     """
     from sklearn.preprocessing import MinMaxScaler
     import matplotlib.pyplot as plt

@@ -1203,7 +1203,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=True, 
                        MSA_reference_pdb=None, water_reference_resids=None, num_workers=4):
                        
-"""
+    """
     Initialize and compute all water networks for a directory of pdbs.
 
     Parameters

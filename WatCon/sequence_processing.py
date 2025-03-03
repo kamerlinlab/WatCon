@@ -18,8 +18,22 @@ import os
 ##First function could be revised to use salign instead of multiple instances of malign
 
 def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
-    #Optional structural alignment -- alignment would be required, but this method uses modeller in particular
+    """
+    Perform structural alignment using modeller
 
+    Parameters
+    ----------
+    pdb_dir : str
+        Directory of pdb files
+    same_chain : str or list
+        Indication of which chains to align (If a list, needs to be in the same order as the sorted PDB directory)
+    out_dir : str
+        Output directory
+
+    Returns
+    -------
+    None
+    """
 
     env = Environ()
     aln = Alignment(env)
@@ -55,15 +69,21 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
 
 def msa_with_modeller(alignment_file, combined_fasta):
     """
-    Perform MSA using modeller
+    Perform Multiple Sequence Alignment (MSA) using Modeller.
 
-    Note: If your proteins are not closely related, it may be better to use a more sophisticated alignment method
+    Note
+    ----
+    If the proteins are not closely related, it may be better to use a more sophisticated alignment method.
 
-    Paramenters:
-    - alignment_file: Name of file to write to
-    - combined_fasta: Collection of sequences with names of all proteins in fasta format
+    Parameters
+    ----------
+    alignment_file : str
+        Name of the file to write the alignment results to.
+    combined_fasta : str
+        Path to a FASTA file containing sequences of all proteins.
 
-    Returns:
+    Returns
+    -------
     None
     """
 
@@ -92,14 +112,21 @@ def msa_with_modeller(alignment_file, combined_fasta):
 
 def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
     """
-    Option for a build-in structural alignment. Will align all pdbs to the first pdb when pdbs_dir is sorted and output corresponding trans/rot matrices
+    Perform a built-in structural alignment.
 
-    Parameters:
-    - pdb_dir: directory containing all pdbs
-    - same_chain: str or list containing all chains of interest, in order of pdbs when sorted
+    This function aligns all PDBs to the first PDB (when sorted) and outputs the corresponding translation/rotation matrices.
 
-    Returns:
-    Dictionary containing rotation and translation matrices for each pdb
+    Parameters
+    ----------
+    pdb_dir : str
+        Directory containing all PDB files.
+    same_chain : str or list
+        Chain(s) of interest in the order corresponding to sorted PDBs.
+
+    Returns
+    -------
+    dict
+        Dictionary containing rotation and translation matrices for each PDB.
     """
 
     #Initialize environment
@@ -167,25 +194,38 @@ class ChainAndNonProteinSelect(Select):
 
 def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='aligned_pdbs_with_water'):
     """
-    Use trans/rot matrices from structural alignment to translate waters
+    Apply transformation matrices from structural alignment to translate water molecules.
 
-    Parameters: 
-    - pdb_dir: Directory of given pdbs of interest
-    - rotation_matrices, translation_vectors: Outputted from perform_structural_alignment
+    Parameters
+    ----------
+    pdb_dir : str
+        Directory containing the PDB files of interest.
+    rotation_matrices : dict
+        Rotation matrices obtained from `perform_structural_alignment`.
+    translation_vectors : dict
+        Translation vectors obtained from `perform_structural_alignment`.
 
-    Returns:
+    Returns
+    -------
     None
     """
     def apply_transformation(coordinates, rotation_matrix, translation_vector):
         """
-        Internal function to transform coordinates
+        Internal function to transform atomic coordinates.
 
-        Parameters:
-        - coordinates: coordinates of one atom
-        - rotation_matrix, translation_vector: Outputted from perform_structural_alignment
+        Parameters
+        ----------
+        coordinates : array-like
+            Coordinates of a single atom.
+        rotation_matrix : array-like
+            Rotation matrix obtained from `perform_structural_alignment`.
+        translation_vector : array-like
+            Translation vector obtained from `perform_structural_alignment`.
 
-        Returns:
-        Numpy array of transformed coordinates
+        Returns
+        -------
+        numpy.ndarray
+            Transformed coordinates.
         """
         transformed_coords = np.dot(coordinates, rotation_matrix.T) + translation_vector
         return transformed_coords
@@ -213,15 +253,22 @@ def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='
 
 def seq_similarity(seq1, seq2):
     """
-    Compute sequence similarity between two sequences
+    Compute sequence similarity between two sequences.
 
-    Method taken from https://www.kaggle.com/code/stpeteishii/cafa-5-calculate-sequence-similarity
+    Method taken from:
+    https://www.kaggle.com/code/stpeteishii/cafa-5-calculate-sequence-similarity
 
-    Parameters:
-    -seq1, seq2: sequences to compare
-    
-    Returns:
+    Parameters
+    ----------
+    seq1 : str
+        First sequence to compare.
+    seq2 : str
+        Second sequence to compare.
+
+    Returns
+    -------
     float
+        Sequence similarity score.
     """
 
     alignments = pairwise2.align.globalxx(seq1,seq2)
@@ -241,14 +288,19 @@ def seq_similarity(seq1, seq2):
 
 def pdb_to_fastas(pdb_file, fasta_out, name='STATE', custom_residues=None):
     """
-    Convert pdb to fasta, includes nonstandard residue names
+    Convert a PDB file to FASTA format, including nonstandard residue names.
 
-    Parameters:
-    - pdb_file: input
-    - fasta_out: output directory
-    - name: name (.fa extension added automatically)
+    Parameters
+    ----------
+    pdb_file : str
+        Input PDB file.
+    fasta_out : str
+        Output directory for the FASTA file.
+    name : str
+        Name of the output file (".fa" extension added automatically).
 
-    Returns:
+    Returns
+    -------
     None
     """
     os.makedirs(fasta_out, exist_ok=True)
@@ -284,10 +336,17 @@ def pdb_to_fastas(pdb_file, fasta_out, name='STATE', custom_residues=None):
 
 def parse_fasta(fasta):
     """
-    Get sequence information from fasta
+    Extract sequence information from a FASTA file.
 
-    Returns:
-    Seq objects
+    Parameters
+    ----------
+    fasta_file : str
+        Path to the FASTA file.
+
+    Returns
+    -------
+    Bio.Seq.Seq
+        Sequence object from the FASTA file.
     """
     records = SeqIO.parse(fasta, 'fasta')
     df = pd.DataFrame(columns=['sequence', 'EntryID'])
@@ -301,15 +360,23 @@ def parse_fasta(fasta):
 
 def generate_msa_alignment(alignment_file, combined_fasta, fasta_individual):
     """
-    Renumber residue indices based on MSA alignment
+    Renumber residue indices based on MSA alignment.
 
-    Parameters:
-    - alignment_file: name of MSA alignment file -- will generate if the file does not exist
-    - combined_fasta: Fasta file with all sequences
-    - fasta_cur: Particular fasta file with sequence of interest
+    If the alignment file does not exist, it will be generated.
 
-    Returns:
-    List of msa_indices
+    Parameters
+    ----------
+    alignment_file : str
+        Name of the MSA alignment file.
+    combined_fasta : str
+        Path to the FASTA file containing all sequences.
+    fasta_cur : str
+        FASTA file containing the sequence of interest.
+
+    Returns
+    -------
+    list of int
+        List of MSA indices corresponding to the sequence of interest.
     """
     #Make alignment file with modeller if name does not exist
     if not os.path.exists(alignment_file):
@@ -341,15 +408,25 @@ def generate_msa_alignment(alignment_file, combined_fasta, fasta_individual):
 
 def convert_msa_to_individual(msa_indices, msa_indices_ref, resids, resid_sequence_ref, resid_individual_ref):
     """
-    Get residue indices from MSA using known reference
+    Retrieve residue indices from MSA using a known reference.
 
-    msa_indices: List of MSA indices for particular sequence
-    msa_indices_ref: List of MSA indices for reference sequence
-    resids: List of residues for particular sequence
-    resid_sequence_ref: List of residues for reference
-    resid_individual_ref: Reference residue for one structure
+    Parameters
+    ----------
+    msa_indices : list of int
+        List of MSA indices for the sequence of interest.
+    msa_indices_ref : list of int
+        List of MSA indices for the reference sequence.
+    resids : list of int
+        List of residue indices for the sequence of interest.
+    resid_sequence_ref : list of int
+        List of residue indices for the reference sequence.
+    resid_individual_ref : int
+        Reference residue index for a specific structure.
 
-    Returns: (Int) Desired resid for paricular structure
+    Returns
+    -------
+    int
+        Desired residue index for the given structure.
     """
 
     # Find the index in the reference MSA

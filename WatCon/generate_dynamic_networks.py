@@ -334,16 +334,17 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         list of tuples
             Each connection is represented as a tuple with the following elements:
             - connections[0] : int  
-              Index of the first atom.
+                Index of the first atom.
             - connections[1] : int  
-              Index of the second atom.
+                Index of the second atom.
             - connections[2] : str  
-              Atom name of the first atom.
+                Atom name of the first atom.
             - connections[3] : str  
-              Type of interaction ('WAT-WAT' or 'WAT-PROT').
+                Type of interaction ('WAT-WAT' or 'WAT-PROT').
             - connections[4] : str  
-              Whether the interaction is in the active site ('active_site') or not ('not_active_site').
+                Whether the interaction is in the active site ('active_site') or not ('not_active_site').
         """
+
         connections = []
 
         # Select active site atoms if specified

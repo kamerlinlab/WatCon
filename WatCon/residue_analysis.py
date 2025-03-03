@@ -128,6 +128,20 @@ def get_waterprotein_interactions_singleframe(network):
 '''
 
 def get_interaction_counts(network, selection='all'):
+    """
+    Calculate numbers of interactions split by 'water-water' and 'water-protein'.
+
+    Parameters
+    ----------
+    network : WaterNetwork object
+    selection : {'all', 'active_site', 'not_active_site'}
+        Specifies which subset of the graph to analyze.
+
+    Returns
+    ----------
+    dict
+        Describes number of 'water-water' and 'water-protein' interactions.
+    """
     interaction_counts = {'water-water': 0, 'water-protein': 0}
     for _, _, data in network.graph.edges(data=True):
         if selection=='all':
@@ -176,6 +190,22 @@ def get_per_residue_interactions(network, selection='all'):
 '''
 
 def get_per_residue_interactions(network, selection='all', msa=False):
+    """
+    Calculate numbers of interactions per residue.
+
+    Parameters
+    ----------
+    network : WaterNetwork object
+    selection : {'all', 'active_site', 'not_active_site'}
+        Specifies which subset of the graph to analyze.
+    msa : bool, optional
+        Indicate whether to use msa common residue indices
+
+    Returns
+    ----------
+    dict
+        Describes number of interactions per residue.
+    """
     def get_resid_by_index(index, is_water):
         if is_water:
             matches = [f.resid for f in network.water_molecules if f.O.index == index]
@@ -286,15 +316,24 @@ def get_all_water_distances(network_group, box, selection='No-active-site', msa=
 
 def classify_waters(network, ref1_coords, ref2_coords):
     """
-    Classify all water-protein interactions based on two reference angles 
+    Classify all water-protein interactions based on two reference angles.
 
-    Parameters:
-    - network: WaterNetwork object
-    - ref1_coords: Coordinates of first reference point
-    - ref2_coords: Coordinates of second reference point
+    This function analyzes the geometric relationships between water molecules and 
+    protein atoms by calculating angles relative to two reference points.
 
-    Returns:
-    Dictionary describing interactions and calculated angles
+    Parameters
+    ----------
+    network : WaterNetwork
+        The water network object containing interaction data.
+    ref1_coords : array-like
+        Coordinates of the first reference point (e.g., an atom or centroid).
+    ref2_coords : array-like
+        Coordinates of the second reference point (e.g., an atom or centroid).
+
+    Returns
+    -------
+    dict
+        A dictionary describing interaction classifications and calculated angles.
     """
     #Maybe extend to implement ML model to optimize angles
 
@@ -365,12 +404,6 @@ def plot_waterprotein_interactions(network_group):
     fig.supxlabel('Frame')
     fig.supylabel('Number of protein/water interactions')
     plt.show()
-
-if __name__ == '__main__':
-    parm = ''
-    traj = ''
-    
-    network_group, box, md_universe = initialize_trajectory_waterprotein_network(parm, traj, custom_selection='resname CSP or resname CYM')
 
 
 
