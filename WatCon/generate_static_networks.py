@@ -404,7 +404,6 @@ class WaterNetwork:
                         else:
                             classification = 'side-chain'
                         connections.append((protein_indices[neighbor], water_indices[i], protein_names[neighbor], 'WAT-PROT', site_status, classification))
-        print(connections)
         return connections
 
     def find_directed_connections(self, dist_cutoff=2.0, water_active=None, protein_active=None, active_site_only=False, 
@@ -772,7 +771,7 @@ class WaterNetwork:
                 G.add_node(molecule.O.index, pos=molecule.O.coordinates, atom_category='WAT', MSA=None) #have nodes on all oxygens
 
             if water_only == False:
-                for molecule in protein_active:              
+                for molecule in protein_active:          
                     MSA_index = MSA_indices[molecule.resid-1]
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
@@ -1200,7 +1199,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
                        active_site_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.3, angle_criteria=None,
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=True,
                        cluster_coordinates=False, clustering_method='hdbscan', cluster_water_only=True, min_cluster_samples=15, eps=None, msa_indexing=True,
-                       alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=True, 
+                       alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=True, classification_file_base='STATIC',
                        MSA_reference_pdb=None, water_reference_resids=None, num_workers=4):
                        
     """
@@ -1263,6 +1262,8 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
         Directory containing individual FASTA files. Default is 'fasta'.
     classify_water : bool, optional
         If True, classifies water molecules based on MSA indexing. Default is True.
+    classification_file_base : str, optional
+        Name of outputted csv for classification file. Default is STATIC
     MSA_reference_pdb : str or None, optional
         Path to the reference PDB file for MSA-based selections. Default is None.
     water_reference_resids : list or None, optional
@@ -1340,7 +1341,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             classification_dict = residue_analysis.classify_waters(network, ref1_coords=ref_coords[0], ref2_coords=ref2_coords)
 
             #Write classification dict into a csv file -- CHANGE THIS FOR TRAJECTORIES
-            with open(f'CLASSIFICATION_STATIC.csv', 'a') as FILE:
+            with open(f'{classification_file_base}.csv', 'a') as FILE:
                 for key, val in classification_dict.items():
                     FILE.write(f"{pdb_file.split('.')[0]},{key},{val[0]},{val[1]}\n")
         
@@ -1422,7 +1423,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             else:
                 ref_coords = [u.select_atoms(f"resid {water_reference_resids} and name CA").positions]
         
-        with open(f'CLASSIFICATION_STATIC.csv', 'w') as FILE:
+        with open(f'{classification_file_base}.csv', 'w') as FILE:
             FILE.write('PDB ID,Resid,MSA_Resid,Index_1,Index_2,Protein_Atom,Classification,Angle_1,Angle_2\n')
 
     coords = []
@@ -1440,7 +1441,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
 
         # Transpose each (3, x) array to (x, 3) and concatenate along axis 0
         combined_coordinates = np.concatenate([arr for arr in coordinates], axis=0)
-        cluster_centers = get_clusters(networks, cluster=clustering_method, min_samples=min_cluster_samples, coordinates=combined_coordinates, eps=eps)
+        cluster_centers = get_clusters(networks, cluster=clustering_method, min_samples=min_cluster_samples, coordinates=combined_coordinates, eps=eps, filename_base=classification_file_base)
         return networks, metrics, names, cluster_centers
 
     return networks, metrics, names

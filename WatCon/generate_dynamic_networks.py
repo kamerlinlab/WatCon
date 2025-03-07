@@ -1041,6 +1041,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             coords = [np.array(f.O.coordinates) for f in self.water_molecules]
 
             if not water_only:
+                print('Including OtherAtoms in clustering')
                 #coords.extend([np.array(f.coordinates) for f in self.protein_subset])
                 coords.extend([np.array(f.coordinates) for f in self.protein_atoms])
 
@@ -1089,6 +1090,23 @@ def get_clusters(coordinates, cluster, min_samples=10, eps=0.0, n_jobs=1, filena
 
     return cluster_labels, cluster_centers
 
+def collect_densities(pdb_file, trajectory_file, active_site_definition, custom_selection, water_name, output_name):
+    from MDAnalysis.analysis import align, density
+
+    #Perform density analysis
+    ref = mda.Universe(pdb_file)
+    if not isinstance(trajectory_file, list):
+        trajectory_file = [trajectory_file]
+    u = mda.Universe(pdb_file, *trajectory_file)
+    align.AlignTraj(u, ref, select='name CA', in_memory=True).run()
+    ag = u.select_atoms(f'protein or {custom_selection}')
+    ag.write(f'{output_name}.pdb')
+
+    ow = u.select_atoms(f"resname {water_name} and {active_site_definition}", updating=True)
+    D = density.DensityAnalysis(ow, delta=1.0)
+    D.run()
+    D.results.density.convert_density('TIP3P')
+    D.density.export(f"{output_name}.dx", type='double')
 
 def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type, custom_selection, 
                               active_site_reference, active_site_radius, water_name, msa_indexing, 
@@ -1217,7 +1235,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=False, 
                        cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True, 
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=False,
-                       MSA_reference_pdb=None, water_reference_resids=None, num_workers=4):
+                       classification_file_base='DYNAMIC', MSA_reference_pdb=None, water_reference_resids=None,  num_workers=4):
     
     """
     Initialize and compute all water networks per frame for a trajectory.
@@ -1279,6 +1297,8 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         Directory containing individual FASTA files. Default is 'fasta'.
     classify_water : bool, optional
         If True, classifies water molecules based on MSA indexing. Default is True.
+    classification_file_base : str, optional
+        Name of outputted csv for classification file. Default is DYNAMIC
     MSA_reference_pdb : str or None, optional
         Path to the reference PDB file for MSA-based selections. Default is None.
     water_reference_resids : list or None, optional
@@ -1306,22 +1326,19 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
         print(f"Processing frame {frame_idx}")
 
-
         #If an MSA has been performed
         if msa_indexing == True:
 
             #Assuming fasta file is named similarly to the pdb -- need sequence files for MSA alignment
             try:
                 fasta_individual = [f for f in os.listdir(fasta_directory) if (topology_file.split('.')[0].split('_')[0] in f and 'fa' in f)][0]
-
                 #Generate MSA if file does not exist and output MSA indices corresponding to partcicular sequence
                 msa_indices = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
-
             #If MSA cannot be done, use residues as msa_indices
             except:
                 print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. Check your naming schemes!')
                 msa_indices = residues
-            
+
         else:
             msa_indices = None
 
@@ -1353,6 +1370,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         if classify_water: 
             if msa_indices is None:
                 print('No MSA indices found, waters cannot be classified without a common indexing reference!')
+                print('Did you set msa_indexing=on?')
                 raise ValueError
             
             #Select reference coords
@@ -1364,7 +1382,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             classification_dict = residue_analysis.classify_waters(network, ref1_coords=ref_coords[0], ref2_coords=ref2_coords)
 
             #Write classification dict into a csv file
-            with open(f'CLASSIFICATION_DYNAMIC.csv', 'a') as FILE:
+            with open(f'{classification_file_base}.csv', 'a') as FILE:
                 for key, val in classification_dict.items():
                         FILE.write(f"{frame_idx},{key},{val[0]},{val[1]}\n")
 
@@ -1440,7 +1458,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                 ref_coords = [u.select_atoms(f"resid {water_reference_resids} and name CA").positions]
 
         #Write header for classification file
-        with open(f'CLASSIFICATION_DYNAMIC.csv', 'w') as FILE:
+        with open(f'{classification_file_base}.csv', 'w') as FILE:
             FILE.write('Frame Index,Resid,MSA_Resid,Index_1,Index_2,Protein_Atom,Classification,Angle_1,Angle_2\n')
 
 
@@ -1457,7 +1475,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         ]
         combined_coordinates = np.concatenate([arr for arr in coordinates], axis=0)
 
-        cluster_labels, cluster_centers = get_clusters(combined_coordinates, cluster=clustering_method, min_samples=min_cluster_samples, eps=eps, n_jobs=num_workers)
+        cluster_labels, cluster_centers = get_clusters(combined_coordinates, cluster=clustering_method, min_samples=min_cluster_samples, eps=eps, n_jobs=num_workers, filename_base=classification_file_base)
         return (network_metrics, cluster_centers)
 
     #Return only metrics if no clustering

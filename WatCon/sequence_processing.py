@@ -3,8 +3,6 @@ Functions in this file will serve the purpose to perform alignments so that cons
 
 '''
 
-#from modeller import *
-
 import numpy as np
 import pandas as pd
 from Bio.PDB import PDBParser, PDBIO, Select
@@ -13,6 +11,7 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 import os
 
+from modeller import *
 
 
 ##First function could be revised to use salign instead of multiple instances of malign
@@ -34,7 +33,6 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
     -------
     None
     """
-
     env = Environ()
     aln = Alignment(env)
     pdbs = os.listdir(pdb_dir) 
@@ -118,8 +116,8 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
 
     Parameters
     ----------
-    pdb_dir : str
-        Directory containing all PDB files.
+    pdb_dir : str or list
+        Directory containing all PDB files or list of paths to PDBs
     same_chain : str or list
         Chain(s) of interest in the order corresponding to sorted PDBs.
 
@@ -132,8 +130,13 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
     #Initialize environment
     env = Environ()
 
+    if isinstance(pdb_dir, list):
+        pdbs = pdb_dir
+        pdb_dir = '.'
+    else:
+        pdbs = os.listdir(pdb_dir) 
+
     #Sort pdbs by name
-    pdbs = os.listdir(pdb_dir) 
     pdbs.sort()  
 
     #Initialize dictionary to contain rotation and translation matrices
@@ -166,14 +169,15 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
         mdl = model(env)
         mdl.read(file=aln[pdbs[0]].atom_file, model_segment=aln[pdbs[0]].range)
         mdl.color(aln=aln)
-        mdl.write(file=f"{out_dir}/{pdbs[0].split('.pdb')[0]}.aln.pdb")
+        print('EXPERIMENTING, CHECK YOUR STRUCTURES')
+        mdl.write(file=f"{out_dir}/{pdbs[0].split('.pdb')[0].split('/')[-1]}.aln.pdb") 
     
         
         mdl2 = model(env)
         mdl2.read(file=aln[ref_pdb].atom_file, model_segment=aln[ref_pdb].range)
         sel = selection(mdl).only_atom_types('CA')
         s = sel.superpose(mdl2, aln)
-        mdl2.write(file=f"{out_dir}/{ref_pdb.split('.pdb')[0]}.aln.pdb")
+        mdl2.write(file=f"{out_dir}/{ref_pdb.split('.pdb')[0].split('/')[-1]}.aln.pdb")
         
         #Append to dictionary
         rotation_information['Rot'].append(np.array(s.rotation))   
@@ -391,10 +395,8 @@ def generate_msa_alignment(alignment_file, combined_fasta, fasta_individual):
     #Name of sequence
     names = [f_ind for (f_ind, f) in enumerate(align_data) if fasta_cur[0].replace('>','').replace('\n','') in f]
     end_index = [f_ind for (f_ind, f) in enumerate(align_data) if (f_ind > names[0] and '*' in f)][0]
-
     #Isolate sequence
     sequence = ''.join(align_data[names[0]+2:end_index+1]).replace('*','').replace('\n','')
-
     #Initiate empty list for indices
     msa_indices = []
 
@@ -402,7 +404,6 @@ def generate_msa_alignment(alignment_file, combined_fasta, fasta_individual):
     for val_cur, letter in enumerate(sequence):
         if letter != '-':
             msa_indices.append(val_cur+1)
-            
     return msa_indices
 
 
