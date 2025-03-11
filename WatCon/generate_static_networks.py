@@ -1381,7 +1381,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             visualize_structures.pymol_project_oxygen_network(network, filename=f"{pdb_file.split('.')[0]}.pml", out_path='pymol_projections', active_site_only=active_site_only)
 
         if return_network:
-            return metrics, networks
+            return metrics, network
         else:
             return metrics, None
     
