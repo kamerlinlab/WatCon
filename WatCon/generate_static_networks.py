@@ -1431,8 +1431,8 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
     coords = []
 
     #Parallelized so there is one worker allocated for each pdb
-    metrics, networks = Parallel(n_jobs=num_workers)(delayed(process_pdb)(pdb_file, coords, ref_coords, references) for pdb_file in pdbs)
-    #networks, metrics = zip(*results)
+    results = Parallel(n_jobs=num_workers)(delayed(process_pdb)(pdb_file, coords, ref_coords, references) for pdb_file in pdbs)
+    metrics, networks = zip(*results)
 
     if cluster_coordinates:
         print('Clustering...')

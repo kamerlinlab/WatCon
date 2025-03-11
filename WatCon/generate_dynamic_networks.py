@@ -1467,8 +1467,8 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
 
     #Parallelized so there is one worker allocated for each frame
-    network_metrics, networks = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, coords, ref_coords, residues) for frame_idx in range(frames))
-
+    results = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, coords, ref_coords, residues) for frame_idx in range(frames))
+    network_metrics, networks = zip(*results)
     #Cluster coordinates after networks are created returns metrics and centers
     if cluster_coordinates:
         print('Clustering...')
