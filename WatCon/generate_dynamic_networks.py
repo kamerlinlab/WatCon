@@ -1090,8 +1090,9 @@ def get_clusters(coordinates, cluster, min_samples=10, eps=0.0, n_jobs=1, filena
 
     return cluster_labels, cluster_centers
 
-def collect_densities(pdb_file, trajectory_file, active_site_definition, custom_selection, water_name, output_name):
+def collect_densities(pdb_file, trajectory_file, active_site_definition, custom_selection, water_name, water_oxygen, output_name):
     from MDAnalysis.analysis import align, density
+    from find_conserved_networks import find_clusters_from_densities
 
     #Perform density analysis
     ref = mda.Universe(pdb_file)
@@ -1102,11 +1103,13 @@ def collect_densities(pdb_file, trajectory_file, active_site_definition, custom_
     ag = u.select_atoms(f'protein or {custom_selection}')
     ag.write(f'{output_name}.pdb')
 
-    ow = u.select_atoms(f"resname {water_name} and {active_site_definition}", updating=True)
+    ow = u.select_atoms(f"({water_name} and name {water_oxygen}) and {active_site_definition}", updating=True)
     D = density.DensityAnalysis(ow, delta=1.0)
     D.run()
     D.results.density.convert_density('TIP3P')
     D.density.export(f"{output_name}.dx", type='double')
+
+    hotspot_coords = find_clusters_from_densities(f"{output_name}.dx", output_name=f"{output_name}_densityclusters", threshold=1.5)
 
 def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type, custom_selection, 
                               active_site_reference, active_site_radius, water_name, msa_indexing, 
@@ -1309,12 +1312,13 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
     Returns
     -------
     tuple
-        - networks: list, optional 
-            List of WaterNetwork objects (if return_network=True)
         - metrics: dict
             Dictionary of calculated metircs
+        - networks: list, optional 
+            List of WaterNetwork objects (if return_network=True)
         - centers: dict
             Dictionary of cluster centers (if clustering is on)
+
     """
     def process_frame(frame_idx, coords=None, ref_coords=None, residues=None):
         """
@@ -1402,9 +1406,9 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             visualize_structures.pymol_project_oxygen_network(network, filename=f'{frame_idx+2}.pml', out_path='pymol_projections', active_site_only=active_site_only)
         #Do not do this for large trajectories
         if return_network:
-            return (network, metrics)
+            return (metrics, network)
         else:
-            return(metrics)
+            return(metrics, None)
         
 
     
@@ -1463,7 +1467,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
 
     #Parallelized so there is one worker allocated for each frame
-    network_metrics = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, coords, ref_coords, residues) for frame_idx in range(frames))
+    network_metrics, networks = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, coords, ref_coords, residues) for frame_idx in range(frames))
 
     #Cluster coordinates after networks are created returns metrics and centers
     if cluster_coordinates:
@@ -1476,7 +1480,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         combined_coordinates = np.concatenate([arr for arr in coordinates], axis=0)
 
         cluster_labels, cluster_centers = get_clusters(combined_coordinates, cluster=clustering_method, min_samples=min_cluster_samples, eps=eps, n_jobs=num_workers, filename_base=classification_file_base)
-        return (network_metrics, cluster_centers)
+        return (network_metrics, networks, cluster_centers)
 
     #Return only metrics if no clustering
-    return(network_metrics)
+    return(network_metrics, networks, None)

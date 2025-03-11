@@ -27,6 +27,33 @@ def combine_graphs(list_of_graphs):
     U = nx.disjoint_union_all(list_of_graphs)
     return U
 
+def collect_coordinates(pkl_list):
+    """
+    Collect coordinates into one array from .pkl files
+
+    Parameters
+    ----------
+    pkl_list : list
+        List of pkl_files (full paths)
+
+    Returns
+    -------
+    np.ndarray
+        Array of combined coordinates
+    """
+    combined_coords = []
+    for file in pkl_list:
+        with open(file, 'rb') as FILE:
+            e = pickle.load(FILE)
+
+        try:
+            combined_coords.append([f['coordinates'] for f in e if f['coordinates'].shape[1] == 3])
+        except: 
+            print('Could not find ["coordinates"], check your inputs!')
+
+    return np.array(combined_coords)
+
+
 
 def cluster_nodes(combined_graph, cluster='hdbscan', min_samples=10):
     """
@@ -377,6 +404,25 @@ def identify_conserved_waterprotein_interactions_angles(classification_file):
 
 
 def find_clusters_from_densities(density_file, output_name=None, threshold=1.5):
+    """
+    Find clusters from densities.
+
+    Parameters
+    ----------
+    density_file : str
+        .dx file containing density information
+    output_name : str
+        Base name for output
+    threshold : float
+        Threshold for cutoff
+
+    Returns
+    -------
+    np.ndarray
+        Array of density hotspot coordinate locations
+
+
+    """
     from gridData import Grid
     import scipy.ndimage as ndimage
     if output_name is None:
@@ -398,3 +444,102 @@ def find_clusters_from_densities(density_file, output_name=None, threshold=1.5):
             FILE.write(f"ATOM{i:5d}  O   HOH     1    {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           O  \n")
 
     return(hotspot_coords)
+
+    
+def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', output='commonality'):
+    """
+    Plot commonality to cluster centers.
+
+    Parameters
+    ----------
+    files : list
+        List of outputted .pkl files from WatCon
+    input_directory : str
+        Directory containing files
+    cluster_pdb : str
+        PDB of clusters
+    plot_type : {'bar', 'hist'}
+        Type of plot
+    output : str
+        Base filename for saving images
+
+    Returns
+    -------
+    None
+    """
+
+    name_list = []
+    network_list = []
+
+    names = True
+    #Check if files have names (from crystal structures) or do not
+    with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
+        e = pickle.load(FILE)
+        if len(e) < 4:
+            names = Fales
+        
+    if names:
+        for i, file in enumerate(files):
+            with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
+                e = pickle.load(FILE)
+            name_list.extend(e[3])
+            network_list.extend(e[0])
+    else:
+        for i, file in enumerate(files):
+            with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
+                e = pickle.load(FILE)
+
+            name_list.extend([f"{i}-{j}" for j, _ in enumerate(e)])
+            network_list.extend(e[0])
+
+    with open(cluster_pdb, 'r') as FILE:
+        lines = FILE.readlines()
+
+    centers = np.zeros(len(lines), 3)
+    for i, line in enumerate(lines):
+        if line.startswith("ATOM") or line.startswith("HETATM"):
+            x = float(line[30:38].strip())
+            y = float(line[38:46].strip())
+            z = float(line[46:54].strip())
+            centers[i,:] = x,y,z
+    
+    commonality_dict = find_commonality(networks_list, centers, names)
+
+
+    if plot_type == 'bar':
+        fig, ax = plt.subplots(1, figsize=(5,3), tight_layout=True)
+        gene_data = {}
+        for i, (name, commonality) in enumerate(commonality_dict.items()):
+
+            # Plot the bar graph
+            names = list(commonality_dict.keys())
+            x = np.arange(len(names))
+            width = 0.5
+
+        for i, name in enumerate(names):
+            ax.bar(x[i], commonality, width, color='gray', hatch='//', edgecolor='k', label=name)
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(names, fontsize=12)
+        ax.set_ylabel('Conservation score', fontsize=15)
+        ax.tick_params(axis='y', labelsize=12)
+        ax.tick_params(axis='x', rotation=60)
+        #ax.legend(frameon=True, edgecolor='k', fontsize=10) 
+        
+        plt.savefig(f"{output}_bar.png", dpi=200)
+    
+    elif plot_type == 'hist':
+        fig, ax = plt.subplots(1, figsize=(3,2), tight_layout=True)
+        vals = commonality_dict.values()
+
+        hist, xedges = np.histogram(vals, density=True, bins=30)
+        xcenters = (xedges[1:]+xedges[:-1])/2
+
+        ax.plot(xcenters, hist)
+        ax.set_xlabel('Commonality score')
+        ax.set_ylabel('Density')
+        plt.savefig(f"{output}_hist.png", dpi=200)
+        
+    else:
+        print('Select a valid plot type. Currently only "bar" or "hist".')
+        raise ValueError

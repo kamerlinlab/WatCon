@@ -1,0 +1,28 @@
+; Sample input file for WatCon analysis
+
+
+; Initialize
+concatenate: PTP1B_closed_1,PTP1B_closed_2    ; Indicate which runs to concatenate. All others will be treated separately
+input_directory: watcon_output                ; Folder which contains outputted WatCon .pkl files
+
+
+; Basic metric analysis
+histogram_metrics: on                         ; Will make basic matplotlib histograms of metrics according to desired concatenation                
+
+
+; Density analysis
+calculate_densities: on                       ; Use MDAnalysis density to output density of waters (ONLY FOR DYNAMIC_NETWORKS)
+density_pdb: run_1.gro
+traj_directory: PTP1B_trajects
+active_site_definition: around 11 (resid 220 and name CA) ; MDAnalysis selection language for active site
+
+
+; Cluster conservation
+cluster_concatenated: on                      ; Indicate whether to cluster concatenated coordinates
+cluster_file: STATIC.pdb                      ; Name of pdb file containing clusters to compare to
+calculate_commonality: bar                    ; Produce commonality plot either as a 'bar' bar graph or 'hist' histogram 
+color_by_conservation: all                    ; Produce .pml file coloring either 'centers', 'connections' or 'all' by conservation
+
+; Residue-water classification
+classify_waters: on                           ; Use outputted .csv files from 2-angle classification to generate scatter/density plots
+

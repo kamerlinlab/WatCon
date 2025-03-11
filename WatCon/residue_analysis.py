@@ -393,6 +393,7 @@ def classify_waters(network, ref1_coords, ref2_coords):
 
     return classification_dict
 
+"""
 def plot_waterprotein_interactions(network_group):
     all_interaction_dict = get_waterprotein_interactions(network_group)
     active_site_interaction = get_waterprotein_interactions(network_group)
@@ -404,7 +405,217 @@ def plot_waterprotein_interactions(network_group):
     fig.supxlabel('Frame')
     fig.supylabel('Number of protein/water interactions')
     plt.show()
+"""
+
+def plot_interactions_from_angles(csvs, output_dir='MSA_images'):
+    """
+    Plot water classifications from 2-angle analysis
+
+    Parameters
+    ----------
+    csvs: list
+        List of .csv files outputted from classify_waters
+    output_dir: str
+        Directory to write images
+
+    Returns
+    ---------
+    None
+
+    """
+
+    dfs = {}
+    for csv in csvs:
+        df = pd.read_csv(csv, delimiter=',')
+        name = '_'.join(csv.split('_')[0:2]).split('.')[0]
+        dfs[name] = df
+
+    scatters = {}
+    classifications = {}
+    max_length=0
+    MSA_min = 1000
+    MSA_max = 1
+
+    for name, df in dfs.items():
+        if len([f for f in df.iterrows()]) > max_length:
+            max_length = len([f for f in df.iterrows()])
+        df.sort_values(by='MSA_Resid')
+        scatters[name] = {}
+        classifications[name] = {}
+        for i, row in df.iterrows():
+            if row['MSA_Resid'] in scatters[name].keys():
+                classifications[name][row['MSA_Resid']].append(row['Classification'])
+                scatters[name][row['MSA_Resid']].append((row['Angle_1'], row['Angle_2']))
+            else:
+                scatters[name][row['MSA_Resid']] = [(row['Angle_1'], row['Angle_2'])]
+                classifications[name][row['MSA_Resid']] = [row['Classification']]
+            if row['MSA_Resid'] < MSA_min:
+                MSA_min = row['MSA_Resid']
+            if row['MSA_Resid'] > MSA_max:
+                MSA_max = row['MSA_Resid']
+
+    # Collect all unique MSAs across all scatters
+    all_MSAs = sorted({MSA for data in scatters.values() for MSA in data.keys()})
+
+    # Calculate global x and y limits
+    all_x = []
+    all_y = []
+    for data in scatters.values():
+        for coord_list in data.values():
+            for coords in coord_list:
+                x, y = map(float, coords)
+                all_x.append(x)
+                all_y.append(y)
+
+    x_min, x_max = min(all_x), max(all_x)
+    y_min, y_max = min(all_y), max(all_y)
+
+    # Add padding for better visualization
+    x_range = x_max - x_min
+    y_range = y_max - y_min
+    x_min, x_max = x_min - 0.1 * x_range, x_max + 0.1 * x_range
+    y_min, y_max = y_min - 0.1 * y_range, y_max + 0.1 * y_range
 
 
 
+    names = list(scatters.keys())
+    print(names)
 
+    colors = {'DYNAMIC': 'gray', 'STATIC': {'backbone': 'lightblue', 'sidechain': 'mediumorchid'}}  # Adjust colors
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Generate and save a separate plot for each MSA
+    for MSA in all_MSAs:
+        plt.figure(figsize=(5, 4), tight_layout=True)
+
+        # Collect all MD data
+        md_x, md_y = [], []
+        
+        for name, data in scatters.items():
+            if MSA in data:
+                if name.startswith('DYNAMIC'):  # Combine all MD_* data
+                    x_vals, y_vals = zip(*data[MSA])  # Extract coordinates
+                    md_x.extend(map(float, x_vals))
+                    md_y.extend(map(float, y_vals))
+
+        # Plot the combined MD data as a surface
+        if md_x and md_y:
+            hist, x_edges, y_edges = np.histogram2d(md_x, md_y, bins=50)
+            X, Y = np.meshgrid(x_edges[:-1], y_edges[:-1])
+            mesh = plt.contourf(X, Y, np.log(hist.T), cmap="gray")
+            cbar = plt.colorbar(mesh)
+            cbar.set_label('log(Density)')
+
+        # Plot STATIC data as scatter plots
+        for name, data in scatters.items():
+            if MSA in data and name == 'STATIC':
+                for i, coords in enumerate(data[MSA]):
+                    x, y = map(float, coords)
+                    classification = classifications[name][MSA][i]
+                    color = colors['STATIC']['backbone'] if classification[1] == 'backbone' else colors['STATIC']['sidechain']
+                    plt.scatter(x, y, color=color)
+
+        plt.xlim(x_min, x_max)
+        plt.ylim(y_min, y_max)
+        plt.title(f"MSA: {int(MSA)}", fontsize=12)
+        plt.tight_layout()
+        plt.savefig(f"{output_dir}/MSA_{int(MSA)}.png", dpi=200)
+        plt.close()
+
+
+def histogram_metrics(all_files, input_directory, concatenate):
+    """
+    Plot histograms for calculated metrics
+
+    Parameters
+    ----------
+    all_files: list
+        List of all files
+    input_directory: str
+        Directory which contains .pkl files
+    concatenate: list
+        List of files to concatenate
+
+    Returns
+    ---------
+    None
+
+    """
+
+    #Initialize dictionaries to store data
+    metrics = ['density', 'characteristic_path_length', 'entropy']
+
+    metric_dict = {'density':[],'characteristic_path_length':[], 'entropy':[], 'water-water':[], 'water-protein':[]}
+
+    metrics_plot =  ['density', 'characteristic_path_length', 'entropy', 'water-water', 'water-protein']
+
+    #Formatted titles for plotting
+    plotting_names = ['Graph Density', 'CPL', 'Graph Entropy', 'Water-Water', 'Water-Protein']
+
+
+    #Combine data in all concatenated files
+    for file in concatenate:
+        watcon_file = os.path.join(input_directory, file)
+        with open(watcon_file, 'rb') as FILE:
+            e = pickle.load(FILE)
+
+        for ts_dict in e[0]:
+            metric_dict['water-water'].append(ts_dict['interaction_counts']['water-water'])
+            metric_dict['water-protein'].append(ts_dict['interaction_counts']['water-protein'])
+
+            for metric in metrics:
+                if isinstance(ts_dict[metric], float):
+                    metric_dict[metric].append(ts_dict[metric])
+                else:
+                    metric_dict[metric].extend([f for f in ts_dict[metric]])
+
+    #Select all other files
+    all_files = [f for f in all_files if f not in concatenate]
+
+    #Create list to store other dictionaries
+    metric_dicts = []
+    for file in all_files:
+        metric_dict = {'density':[],'characteristic_path_length':[], 'entropy':[], 'water-water':[], 'water-protein':[]}
+        watcon_file = os.path.join(input_directory, file)
+        with open(watcon_file, 'rb') as FILE:
+            e = pickle.load(FILE)
+
+        for ts_dict in e[1]:
+            metric_dict['water-water'].append(ts_dict['interaction_counts']['water-water'])
+            metric_dict['water-protein'].append(ts_dict['interaction_counts']['water-protein'])
+            for metric in metrics:
+                if isinstance(ts_dict[metric], float):
+                    metric_dict_static[metric].append(ts_dict[metric])
+                else:
+                    metric_dict_static[metric].extend(f for f in ts_dict[metric])
+        metric_dicts.append(metric_dict)
+
+    #Begin plotting
+    for i, metric in enumerate(metrics_plot):
+        fig, ax = plt.subplots(1,figsize=(3,2))
+        fig.subplots_adjust(left=0, right=0.85)
+        metric_cur_concatenate = np.array(metric_dict[metric])
+
+
+        hist, xedges = np.histogram(metric_cur_concatenate, bins=15, density=True)
+        xcenters = (xedges[1:]+xedges[:-1])/2
+        ax.plot(xcenters, hist, label='Concatenated')
+
+        #sns.kdeplot(data=np.array(metric_cur_dynamic), ax=ax, bw_adjust=2)
+
+
+        for i, metric_dict in enumerate(metric_dicts):
+            metric_cur = np.array(metric_dict[metric])
+
+
+            hist, xedges = np.histogram(metric_cur_static, bins=15, density=True)
+            xcenters = (xedges[1:]+xedges[:-1])/2
+            ax.plot(xcenters, hist, label=f'Sample {i}')
+
+            #sns.kdeplot(data=np.array(metric_cur_static), ax=ax)
+
+        ax.legend(fontsize=8, frameon=False)
+        ax.set_xlabel(plotting_names[i])
+        ax.set_ylabel('Density')
+
+        fig.savefig(f"{metric}_comparehists.png", dpi=200, bbox_inches='tight')

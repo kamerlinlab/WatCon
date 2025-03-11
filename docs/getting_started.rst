@@ -2,6 +2,31 @@ Getting Started
 ===============
 
 
+Preparing Structures
+--------------------
+
+WatCon is an analysis code created for the purposes of water network detection, analysis, and comparison across static and dynamic structures. Directions on how to prepare structures for analysis are as follows.
+
+
+Static Structures
+~~~~~~~~~~~~~~~~~
+
+We require that all static structures be aligned before WatCon analysis. We provide the functionality to perform this alignment using the :mod:`WatCon.sequence_processing` module, which requires structures in PDB format with no headers. This formatting style can be easily accomplished using the ``pdb4amber`` function in the `AmberTools suite <https://ambermd.org/AmberTools.php>`_. 
+
+
+Dynamic Structures
+~~~~~~~~~~~~~~~~~~
+
+We require all dynamic (trajectories) to have been post-processed, with any PBC errors resolved and protein coordinates aligned. Since there are numerous methods at accomplishing this, we leave this process up to the user. To read dynamic information, WatCon leverages the use of `MDAnalysis <https://www.mdanalysis.org/>`_, and so can read any MDAnalysis-readable topologies and trajectories. 
+
+
+Multiple Sequence Alignment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Numerous WatCon functionality is dependent on a common sequence indexing across all structures. We require a multiple sequence alignment (MSA) to be conducted and written to a file in PIR format for this purpose. We have a basic sequence alignment tool implemented in the :mod:`WatCon.sequence_processing` module, which leverages `Modeller <https://salilab.org/modeller/>`_, but we recommend performing a more rigorous alignment for structures which are not closely related and always recommend visually inspecting alignment outputs to ensure accuracy.
+
+
+
 Running WatCon
 --------------
 
@@ -9,7 +34,7 @@ WatCon has been designed to be implemented via the use of either an input file o
 
 
 Sample Input File
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 An example of a WatCon input file is provided below. 
 
@@ -24,7 +49,7 @@ An example of a WatCon input file is provided below.
    topology_file: WT_PTP1B_Unlig_Open.gro             ; Name of topology (required for dynamic)
    trajectory_file: run_1.xtc                       ; Name of trajectory (required for dynamic)
    network_type: water-protein                      ; Use only waters (water-water) or also protein atoms (water-protein)
-   include_hydrogens: off                           ; If include_hydrogens = on, create a directed graph
+   include_hydrogens: on                            ; If include_hydrogens = on, create a directed graph
                                                     ;     MDAnalysis 'protein' selection
    water_name: default                              ; Any custom water names
    multi_model_pdb: False                           ; pdb files have multiple models (typical of NMR structures)
@@ -34,7 +59,7 @@ An example of a WatCon input file is provided below.
                                                     ;     structures with hydrogens)
    angle_criteria: 150                              ; Specify criteria for calculating HBonds with 
                                                     ;     angles+distances (recommended 120 if hydrogens
-                                                    ;     are present)
+                                                    ;     are present -- only activates if include_hydrogens=on)
    
    ; Property calculation
    density: on
@@ -102,11 +127,61 @@ Which will output any PDB files and PyMOL files as specified by the user. Result
 Analyzing calculated metrics
 ----------------------------
 
+To increase ease in combining results across multiple trajectories or multiple static structures, we also allow for supplemental analysis to be conducted via direct python interface or input files following this construction:
+
+
+.. code-block:: txt
+
+    ; Sample input file for WatCon analysis
+    
+    
+    ; Initialize
+    concatenate: PTP1B_closed_1,PTP1B_closed_2,... ; Indicate which runs to concatenate. All others will be treated separately
+    input_directory: watcon_output                 ; Folder which contains outputted WatCon .pkl files
+    
+    
+    ; Basic metric analysis
+    histogram_metrics: on                          ; Will make basic matplotlib histograms of metrics according to desired concatenation                
+    
+    
+    ; Density analysis
+    calculate_densities: on                        ; Use MDAnalysis density to output density of waters (ONLY FOR DYNAMIC_NETWORKS)
+    
+    
+    ; Cluster conservation
+    cluster_file: STATIC.pdb                       ; Name of pdb file containing clusters to compare to
+    calculate_commonality: bar                     ; Produce commonality plot either as a 'bar' bar graph or 'hist' histogram 
+    color_by_conservation: all                     ; Produce .pml file coloring either 'centers', 'connections' or 'all' by conservation
+    
+    ; Residue-water classification
+    classify_waters: on                            ; Use outputted .csv files from 2-angle classification to generate scatter/density plots
+
+WatCon post-analysis can then be executed by the command
+
+.. code-block:: console
+
+   $ python -m WatCon.WatCon --analysis analysis_file.txt
+
+
+We further note that both an input file and analysis file can be passed simulataneously, i.e:
+
+.. code-block:: console
+
+   $ python -m WatCon.WatCon --input input_file.txt --analysis analysis_file.txt --name name_of_system
 
 
 Visualizing Results with PyMOL
 ------------------------------
 
+Numerous modules will output files to visualize water networks or clustered water positions. We provide a brief description of common file types and how to visualize in PyMOL
 
+* Cluster centers (.pdb): Cluster centers will often be saved as PDB files with dummy water oxygen atoms. These can safely be loaded in PyMOL similar to any other PDB file
+* Snapshot water networks (.pml): PyMOL (.pml) files containing information regarding connections among waters are often written, and can easily be loaded in PyMOL by first loading the corresponding structure file and then typing :code:`@FILE.pml` in the PyMOL command line
+
+  .. note:: When loading .pml files for trajectory frames, we recommend only loading in the trajectory frame of interest into PyMOL first, and then follow by loading the .pml. This will reduce unecessary wait time when loading the connections.
+
+* Density distributions (.dx): Density distributions can be loaded into PyMOL with the :code:`load` command, similar to PDB files. For most clear results, load a corresponding structure file first before loading the densities. 
+
+  .. note:: When loading .dx files calculated from MDAnalysis, a structure file written from that same script should be loaded first, to guarantee proper alignment
 
 

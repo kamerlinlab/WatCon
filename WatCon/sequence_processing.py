@@ -11,7 +11,7 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 import os
 
-from modeller import *
+#from modeller import *
 
 
 ##First function could be revised to use salign instead of multiple instances of malign
@@ -394,9 +394,15 @@ def generate_msa_alignment(alignment_file, combined_fasta, fasta_individual):
 
     #Name of sequence
     names = [f_ind for (f_ind, f) in enumerate(align_data) if fasta_cur[0].replace('>','').replace('\n','') in f]
+
     end_index = [f_ind for (f_ind, f) in enumerate(align_data) if (f_ind > names[0] and '*' in f)][0]
     #Isolate sequence
     sequence = ''.join(align_data[names[0]+2:end_index+1]).replace('*','').replace('\n','')
+
+    if len(names) < 2:
+        print('Only detected one line matching the correct sequence. There may be unexpected errors with selecting sequences.')
+        print(f'Name identified is {fasta_cur[0].replace('>','').replace('\n','')} with sequence {sequence}')
+
     #Initiate empty list for indices
     msa_indices = []
 

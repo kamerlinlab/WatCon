@@ -1274,10 +1274,12 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
     Returns
     -------
     tuple
-        - networks: list
-            List of WaterNetwork objects
         - metrics: dict
             Dictionary of calculated metircs
+        - networks: list
+            List of WaterNetwork objects
+        - cluster_centers: dict
+            Dictionary of cluster centers and cartesian coordinates
         - names: list
             List of PDB names for easier processing
     """
@@ -1379,9 +1381,9 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             visualize_structures.pymol_project_oxygen_network(network, filename=f"{pdb_file.split('.')[0]}.pml", out_path='pymol_projections', active_site_only=active_site_only)
 
         if return_network:
-            return (network, metrics)
+            return metrics, networks
         else:
-            return metrics
+            return metrics, None
     
     #Gather pdbs (or any MDAnalysis-readable topology)
     pdbs = [f for f in os.listdir(pdb_dir) if 'swp' not in f]
@@ -1429,8 +1431,8 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
     coords = []
 
     #Parallelized so there is one worker allocated for each pdb
-    results = Parallel(n_jobs=num_workers)(delayed(process_pdb)(pdb_file, coords, ref_coords, references) for pdb_file in pdbs)
-    networks, metrics = zip(*results)
+    metrics, networks = Parallel(n_jobs=num_workers)(delayed(process_pdb)(pdb_file, coords, ref_coords, references) for pdb_file in pdbs)
+    #networks, metrics = zip(*results)
 
     if cluster_coordinates:
         print('Clustering...')
@@ -1442,7 +1444,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
         # Transpose each (3, x) array to (x, 3) and concatenate along axis 0
         combined_coordinates = np.concatenate([arr for arr in coordinates], axis=0)
         cluster_centers = get_clusters(networks, cluster=clustering_method, min_samples=min_cluster_samples, coordinates=combined_coordinates, eps=eps, filename_base=classification_file_base)
-        return networks, metrics, names, cluster_centers
+        return (metrics, networks, cluster_centers, names)
 
-    return networks, metrics, names
+    return (metrics, networks, None, names)
 

@@ -66,7 +66,7 @@ def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=Tr
 
     Parameters
     ----------
-    cluster_centers : array-like
+    coordinate_list : array-like, dict
         List of coordinates representing cluster centers.
     filename_base : str
         Naming scheme to use for the outputted PDB file.

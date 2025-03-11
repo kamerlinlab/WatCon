@@ -120,14 +120,54 @@ def check_conditions(kwargs):
     #Consider making some text to check conditions
     pass
     
+def parse_analysis(filename):
+    """
+    Parse inputs from input file
+
+    Parameters
+    ----------
+    filename : str
+        Path of input file
+
+    Returns
+    ----------
+    dict
+        Dictionary of kwargs
+    """
+    kwargs = {}
+
+    with open(filename, 'r') as FILE:
+        lines = FILE.readlines()
+
+    for line in lines:
+        if 'concatemate:' in line:
+            files_to_concatenate = list(line.split(":")[1].split(';')[0])
+            kwargs['concatenate'] = files_to_concatenate
+        elif 'active_site_definition' in line:
+            active_site_definition = ' '.join(line.split(":")[1].split(';')[0])
+            kwargs['active_site_definition'] = active_site_definition
+
+        else:
+            kw = line.split(':')[0]
+            kw_value = ' '.join(line.split(':')[1].split()[0])
+            if kw_value == 'on':
+                kw_value = True
+            elif kw_value == 'off':
+                kw_value = False
+
+            kwargs[kw] = kw_value
+    return (kwargs)
+
 def run_watcon(structure_type, kwargs):
     """
     Run WatCon from input file
 
     Parameters
     ----------
-    filename : str
-        Path of input file
+    structure_type : {'static', 'dynamic'}
+        Type of input structures
+    kwargs : dict
+        Key word arguments from parsed input file
 
     Returns
     ----------
@@ -142,21 +182,155 @@ def run_watcon(structure_type, kwargs):
     results = initialize_network(**kwargs)
     return results
 
+def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', histogram_metrics=True, 
+                        calculate_densities=False, density_pdb=None, traj_directory=None, active_site_definition=None, 
+                        custom_selection=None, water_name=None, cluster_concatenated=False, cluster_method='hdbscan', eps=0.0,
+                        n_jobs=1, min_samples=100, cluster_filebase='CLUSTER', calculate_commonality='bar', color_by_conservation=None, 
+                        classify_waters=True, csv_dir='classification_csvs'):
+    """
+    Run WatCon analysis from input file
+
+    Parameters
+    ----------
+    concatenate : list
+        List of files to concatenate when performing analysis. Default is None
+    input_directory : str
+        Directory which contains input files. Default is 'watcon_output'
+    histogram_metrics : bool
+        Indicate whether to histogram calculated metrics. Default is True.
+    calculate_densities : bool
+        Calculate densities for combined simulation data. Default is False.
+    density_pdb : str
+        PDB to use for density calculations. Default is None.
+    traj_directory : str
+        Directory containing trajectories to be used when calculating densities. Default is None.
+    active_site_definition : str
+        MDAnalysis selection language to define active site when calculating densities. Default is None.
+    custom_selection : str
+        MDAnalysis selection language for classifying custom residues as 'protein'. Default is None.
+    water_name : str
+        Residue name of water (not necessary if water is WAT, SOL, H2O, or HOH). Default is None.
+    cluster_concatenated : bool
+        Indicate whether to cluster coordinates across concatenate list. Default is False.
+    cluster_method : {'hdbscan', 'optics', 'dbscan'}
+        Cluster method (if cluster_concatenated). Default is 'hdbscan'
+    eps : float
+        Eps value for clustering method (if cluster_concatenated). Default is 0.0.
+    min_samples : int
+        Min sample value for clustering method (if cluster_concatenated). Default is 100.
+    n_jobs : int
+        Number of available cores for clustering 
+    cluster_filebase : str
+        Base of output files. Default is 'CLUSTER'. OR Desired clustered pdb to calculate commonality
+    calculate_commonality : {'bar', 'hist', None}
+        Indicate whether to calculate commonality score to a set of clusters and 
+        plot either as a bar graph (helpful for discrete static structures) or histogram (helpful for high dimensional dynamic data)
+    color_by_conservation : {'all', 'centers', 'connections', None}
+        Color cluster centers by conservation, connections among cluster centers, or neither
+    classify_waters : bool
+        Indicate whether to plot distributions of 2-angle calculatiosn
+    csv_dir: str
+        Directory containing csvs (for classify_waters)
+
+    Returns
+    ----------
+    None
+
+    Notes
+    ----------
+    calculate_densities is NOT recommended for static structures due to sparsity in water positions
+
+    cluster_concatenated is NOT recommended for collections of large trajectories, calculate_densities is recommended instead
+
+    If f"{cluster_filebase}.pdb" already exists and cluster_concatenated == False, then the current clustering pdb will be used for analysis
+
+    NEED TO ADD THE COORDINATE TRANSFORMATIONS, THEY ARE REQUIRED FOR THIS TO WORK UNIVERSALLY!!
+    """
+
+    import WatCon.residue_analysis as residue_analysis
+
+    #Find all .pkl files in input_directory
+    all_files = [f for f in os.listdir(input_directory) if f.endswith('.pkl')]
+
+    #Histogram metircs
+    if histogram_metrics:
+        residue_analysis.histogram_metrics(all_files, input_directory, concatenate)
+
+    #Calculate densities and save centers as pdb atoms
+    if calculate_densities:
+        from WatCon.generate_dynamic_networks import collect_densities
+
+        #Check that pdb and trajectory files have been supplied
+        if any([density_pdb,traj_directory,active_site_definition] == None):
+            print('If calculating densities, must provide valid PDB and trajectory information')
+            raise ValueError
+        
+        trajectories = [os.listdir(traj_directory)]
+        trajectories = [os.path.join(traj_directory, f) for f in trajectories]
+        density_pdb = os.path.join(traj_directory, density_pdb)
+
+        #Allow for user-defined water name
+        if water_name is None:
+            water_name = 'resname HOH or resname WAT or resname SOL or resname H2O'
+        else:
+            water_name = f"resname {water_name}"
+
+        collect_densities(density_pdb, trajectories, active_site_definition, custom_selection, water_name, f"{cluster_filebase}.dx")
+
+    #Cluster concatenated coordinates
+    if cluster_concatenated:
+        from WatCon.find_conserved_networks import collect_coordinates, cluster_coordinates_only
+        from WatCon.visualize_structures import project_clusters
+        files = [os.path.join(input_directory, f) for f in concatenate]
+        combined_coordinates = collect_coordinates(files)
+
+        cluster_labels, cluster_centers = cluster_coordinates_only(combined_coordinates, cluster='hdbscan', min_samples=min_samples, eps=eps, n_jobs=n_jobs)
+        project_clusters(cluster_centers, filename_base=output_name, separate_files=False, b_factors=None)
+    
+    if calculate_commonality:
+        from find_conserved_networks import plot_commonality
+
+        if not os.path.exists(f"{cluster_filebase}.pdb"):
+            print(f"Clustered PDB does not exist. Cannot calculate commonality")
+            raise ValueError
+
+        plot_commonality(all_files, input_directory, f"{cluster_filebase}.pdb" , plot_type)
+
+    if color_by_conservation is not None:
+        from WatCon.find_conserved_networks import identify_conserved_water_clusters, identify_conserved_water_interactions_clusteriing
+        
+        if color_by_conservation == 'all' or color_by_conservation == 'centers':
+            identify_conserved_water_clusters(networks, centers, dist_cutoff=1.0, filename_base=f'{cluster_filebase}_conservation')
+        if color_by_conservation == 'all' or color_by_conservation == 'connections':
+            identify_conserved_water_interactions_clustering(networks, clusters, max_connection_distance=3.0, dist_cutoff=1.0, filename_base=f'{cluster_filebase}_conservation')
+
+    if classify_waters:
+        csvs = [f for f in os.listdir(csv_dir) if f.endswith('.csv')]
+        residue_analysis.plot_interactions_from_angles(csvs)
+
+
+ 
 def parse_arguments():
     """
     Parse arguments from command line
     """
     parser = argparse.ArgumentParser(description='Perform analysis using WatCon')
-    parser.add_argument('--input', type=str, help='Input file')
+    parser.add_argument('--input', type=str, help='Input file', default=None)
+    parser.add_argument('--analysis', type=str, help="Analysis Input File", default=None)
     parser.add_argument('--name', type=str, help='Identifiable name', default='results')
     return parser.parse_args()
 
 if __name__ == "__main__":
     args = parse_arguments()
-    structure_type, kwargs = parse_inputs(args.input)
-    results = run_watcon(structure_type, kwargs)
-    with open(f'{args.name}.pkl', 'wb') as f:
-        pickle.dump(results, f)
+    if args.input is not None:
+        structure_type, kwargs = parse_inputs(args.input)
+        results = run_watcon(structure_type, kwargs)
+        with open(f'{args.name}.pkl', 'wb') as f:
+            pickle.dump(results, f)
+    
+    if args.analysis is not None:
+        kwargs = parse_analysis(args.analysis)
+        run_watcon_postanalysis(**kwargs)
 
 
     
