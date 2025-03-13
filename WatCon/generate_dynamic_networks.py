@@ -1373,7 +1373,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         #Classify waters
         if classify_water: 
             if msa_indices is None:
-                print('No MSA indices found, waters cannot be classified without a common indexing reference!')
+                print('ERROR: No MSA indices found, waters cannot be classified without a common indexing reference!')
                 print('Did you set msa_indexing=on?')
                 raise ValueError
             

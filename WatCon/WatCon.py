@@ -148,14 +148,15 @@ def parse_analysis(filename):
             kwargs['active_site_definition'] = active_site_definition
 
         else:
-            kw = line.split(':')[0]
-            kw_value = ' '.join(line.split(':')[1].split()[0])
-            if kw_value == 'on':
-                kw_value = True
-            elif kw_value == 'off':
-                kw_value = False
+            if ':' in line:
+                kw = line.split(':')[0]
+                kw_value =line.split(':')[1].split()[0]
+                if kw_value == 'on':
+                    kw_value = True
+                elif kw_value == 'off':
+                    kw_value = False
 
-            kwargs[kw] = kw_value
+                kwargs[kw] = kw_value
     return (kwargs)
 
 def run_watcon(structure_type, kwargs):
@@ -285,16 +286,16 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
         combined_coordinates = collect_coordinates(files)
 
         cluster_labels, cluster_centers = cluster_coordinates_only(combined_coordinates, cluster='hdbscan', min_samples=min_samples, eps=eps, n_jobs=n_jobs)
-        project_clusters(cluster_centers, filename_base=output_name, separate_files=False, b_factors=None)
+        project_clusters(cluster_centers, filename_base=cluster_filebase, separate_files=False, b_factors=None)
     
     if calculate_commonality:
-        from find_conserved_networks import plot_commonality
+        from WatCon.find_conserved_networks import plot_commonality
 
         if not os.path.exists(f"{cluster_filebase}.pdb"):
             print(f"Clustered PDB does not exist. Cannot calculate commonality")
             raise ValueError
 
-        plot_commonality(all_files, input_directory, f"{cluster_filebase}.pdb" , plot_type)
+        plot_commonality(all_files, input_directory, f"{cluster_filebase}.pdb" , plot_type=calculate_commonality)
 
     if color_by_conservation is not None:
         from WatCon.find_conserved_networks import identify_conserved_water_clusters, identify_conserved_water_interactions_clusteriing

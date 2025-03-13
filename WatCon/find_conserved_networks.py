@@ -8,6 +8,7 @@ import networkx as nx
 from sklearn.cluster import OPTICS, DBSCAN, HDBSCAN
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import pandas as pd
+import pickle
 
 
 def combine_graphs(list_of_graphs):
@@ -467,6 +468,7 @@ def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', outpu
     -------
     None
     """
+    import matplotlib.pyplot as plt
 
     name_list = []
     network_list = []
@@ -476,26 +478,26 @@ def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', outpu
     with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
         e = pickle.load(FILE)
         if len(e) < 4:
-            names = Fales
+            names = False
         
     if names:
         for i, file in enumerate(files):
-            with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
+            with open(os.path.join(input_directory,file), 'rb') as FILE:
                 e = pickle.load(FILE)
             name_list.extend(e[3])
-            network_list.extend(e[0])
+            network_list.extend(e[1])
     else:
         for i, file in enumerate(files):
-            with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
+            with open(os.path.join(input_directory,file), 'rb') as FILE:
                 e = pickle.load(FILE)
 
             name_list.extend([f"{i}-{j}" for j, _ in enumerate(e)])
-            network_list.extend(e[0])
+            network_list.extend(e[1])
 
     with open(cluster_pdb, 'r') as FILE:
         lines = FILE.readlines()
 
-    centers = np.zeros(len(lines), 3)
+    centers = np.zeros((len(lines), 3))
     for i, line in enumerate(lines):
         if line.startswith("ATOM") or line.startswith("HETATM"):
             x = float(line[30:38].strip())
@@ -503,8 +505,7 @@ def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', outpu
             z = float(line[46:54].strip())
             centers[i,:] = x,y,z
     
-    commonality_dict = find_commonality(networks_list, centers, names)
-
+    commonality_dict = find_commonality(network_list, centers, name_list)
 
     if plot_type == 'bar':
         fig, ax = plt.subplots(1, figsize=(5,3), tight_layout=True)
@@ -530,9 +531,9 @@ def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', outpu
     
     elif plot_type == 'hist':
         fig, ax = plt.subplots(1, figsize=(3,2), tight_layout=True)
-        vals = commonality_dict.values()
+        vals = np.array(list(commonality_dict.values()))
 
-        hist, xedges = np.histogram(vals, density=True, bins=30)
+        hist, xedges = np.histogram(vals, density=True, bins=15)
         xcenters = (xedges[1:]+xedges[:-1])/2
 
         ax.plot(xcenters, hist)

@@ -401,7 +401,8 @@ def generate_msa_alignment(alignment_file, combined_fasta, fasta_individual):
 
     if len(names) < 2:
         print('Only detected one line matching the correct sequence. There may be unexpected errors with selecting sequences.')
-        print(f'Name identified is {fasta_cur[0].replace('>','').replace('\n','')} with sequence {sequence}')
+        fasta_check_name = fasta_cur[0].replace('>','').replace('\n','')
+        print(f"Name identified is {fasta_check_name} with sequence {sequence}")
 
     #Initiate empty list for indices
     msa_indices = []
