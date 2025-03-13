@@ -8,6 +8,8 @@ import MDAnalysis as mda
 from MDAnalysis.analysis import distances
 import networkx as nx
 import matplotlib.pyplot as plt
+import pandas as pd
+
 
 #from generate_dynamic_networks import *
 
@@ -407,7 +409,7 @@ def plot_waterprotein_interactions(network_group):
     plt.show()
 """
 
-def plot_interactions_from_angles(csvs, output_dir='MSA_images'):
+def plot_interactions_from_angles(csvs, input_dir='classification_csvs',output_dir='MSA_images'):
     """
     Plot water classifications from 2-angle analysis
 
@@ -426,7 +428,7 @@ def plot_interactions_from_angles(csvs, output_dir='MSA_images'):
 
     dfs = {}
     for csv in csvs:
-        df = pd.read_csv(csv, delimiter=',')
+        df = pd.read_csv(os.path.join(input_dir,csv), delimiter=',')
         name = '_'.join(csv.split('_')[0:2]).split('.')[0]
         dfs[name] = df
 
@@ -436,19 +438,23 @@ def plot_interactions_from_angles(csvs, output_dir='MSA_images'):
     MSA_min = 1000
     MSA_max = 1
 
+    pdb_names = {}
     for name, df in dfs.items():
         if len([f for f in df.iterrows()]) > max_length:
             max_length = len([f for f in df.iterrows()])
         df.sort_values(by='MSA_Resid')
         scatters[name] = {}
         classifications[name] = {}
+        pdb_names[name] = {}
         for i, row in df.iterrows():
             if row['MSA_Resid'] in scatters[name].keys():
                 classifications[name][row['MSA_Resid']].append(row['Classification'])
                 scatters[name][row['MSA_Resid']].append((row['Angle_1'], row['Angle_2']))
+                pdb_names[name][row['MSA_Resid']].append(row['PDB ID'])
             else:
                 scatters[name][row['MSA_Resid']] = [(row['Angle_1'], row['Angle_2'])]
                 classifications[name][row['MSA_Resid']] = [row['Classification']]
+                pdb_names[name][row['MSA_Resid']] = [row['PDB ID']]
             if row['MSA_Resid'] < MSA_min:
                 MSA_min = row['MSA_Resid']
             if row['MSA_Resid'] > MSA_max:
@@ -481,12 +487,12 @@ def plot_interactions_from_angles(csvs, output_dir='MSA_images'):
     names = list(scatters.keys())
     print(names)
 
-    colors = {'DYNAMIC': 'gray', 'STATIC': {'backbone': 'lightblue', 'sidechain': 'mediumorchid'}}  # Adjust colors
+    colors = {'DYNAMIC': 'gray', 'STATIC': {'backbone': 'dodgerblue', 'sidechain': 'mediumorchid'}}  # Adjust colors
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate and save a separate plot for each MSA
     for MSA in all_MSAs:
-        plt.figure(figsize=(5, 4), tight_layout=True)
+        plt.figure(figsize=(3, 2.5), tight_layout=True)
 
         # Collect all MD data
         md_x, md_y = [], []
@@ -512,14 +518,28 @@ def plot_interactions_from_angles(csvs, output_dir='MSA_images'):
                 for i, coords in enumerate(data[MSA]):
                     x, y = map(float, coords)
                     classification = classifications[name][MSA][i]
-                    color = colors['STATIC']['backbone'] if classification[1] == 'backbone' else colors['STATIC']['sidechain']
-                    plt.scatter(x, y, color=color)
+                    color = colors['STATIC']['backbone'] if 'backbone' in classification else colors['STATIC']['sidechain']
+                    name_new = pdb_names[name][MSA][i]
+                    print(name_new)
+                    if 'open' in name_new or 'Open' in name_new:
+                        facecolor='none'
+                    else:
+                        facecolor=color
+                    plt.scatter(x, y, edgecolor=color, facecolor=facecolor, s=10)
+                    
+                    #plt.text(x,y, name_new)
 
         plt.xlim(x_min, x_max)
         plt.ylim(y_min, y_max)
-        plt.title(f"MSA: {int(MSA)}", fontsize=12)
+        plt.xticks(np.arange(0,181, 50))
+        plt.yticks(np.arange(0,181,50))
+        plt.xlabel('Angle 1')
+        plt.ylabel('Angle 2')
+        plt.title(f"Common residue {int(MSA)}", fontsize=11)
+        #plt.title(f"MSA: {int(MSA)}", fontsize=12)
         plt.tight_layout()
-        plt.savefig(f"{output_dir}/MSA_{int(MSA)}.png", dpi=200)
+        #plt.savefig(f"{output_dir}/MSA_{int(MSA)}.png", dpi=200)
+        plt.savefig(f"{output_dir}/MSA_{int(MSA)}.png", dpi=600)
         plt.close()
 
 

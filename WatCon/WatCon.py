@@ -298,7 +298,7 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
         plot_commonality(all_files, input_directory, f"{cluster_filebase}.pdb" , plot_type=calculate_commonality)
 
     if color_by_conservation is not None:
-        from WatCon.find_conserved_networks import identify_conserved_water_clusters, identify_conserved_water_interactions_clusteriing
+        from WatCon.find_conserved_networks import identify_conserved_water_clusters, identify_conserved_water_interactions_clustering
         
         if color_by_conservation == 'all' or color_by_conservation == 'centers':
             identify_conserved_water_clusters(networks, centers, dist_cutoff=1.0, filename_base=f'{cluster_filebase}_conservation')

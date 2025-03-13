@@ -1391,13 +1391,13 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
 
     if analysis_conditions == 'all':
         analysis_conditions = {
-            'density': True,
-            'connected_components': True,
-            'interaction_counts': True,
-            'per_residue_interactions': True,
-            'characteristic_path_length': True,
-            'graph_entropy': True,
-            'clustering_coefficient': True
+            'density': 'on',
+            'connected_components': 'on',
+            'interaction_counts': 'on',
+            'per_residue_interactions': 'on',
+            'characteristic_path_length': 'on',
+            'graph_entropy': 'on',
+            'clustering_coefficient': 'on'
         }
 
 
@@ -1434,6 +1434,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
     results = Parallel(n_jobs=num_workers)(delayed(process_pdb)(pdb_file, coords, ref_coords, references) for pdb_file in pdbs)
     metrics, networks = zip(*results)
 
+    print('obtained metrics and networks')
     if cluster_coordinates:
         print('Clustering...')
         # Assuming network_metrics contains dictionaries with 'coordinates' arrays

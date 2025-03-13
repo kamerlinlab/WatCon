@@ -233,7 +233,7 @@ def identify_conserved_water_clusters(networks, centers, dist_cutoff=1.0, filena
     scaler.fit(values)
 
     b_factors = scaler.transform(values).flatten()
-    project_clusters(centers, filename_base=filename_base, b_factors=b_factors)
+    project_clusters(centers, filename_base=filename_base, b_factors=b_factors, separate_files=False)
 
     return(center_dict)
 

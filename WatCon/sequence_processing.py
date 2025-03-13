@@ -11,12 +11,13 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 import os
 
-#from modeller import *
+from modeller import *
 
 
 ##First function could be revised to use salign instead of multiple instances of malign
 
-def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
+'''
+def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
     """
     Perform structural alignment using modeller
 
@@ -36,7 +37,9 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
     env = Environ()
     aln = Alignment(env)
     pdbs = os.listdir(pdb_dir) 
-    pdbs.sort()  
+
+    if sort_pdbs==True:
+        pdbs.sort()  
 
     if type(same_chain) != list:  #provide ability for a list of chains to be given, but not required, by default will take chain A from everything
         same_chain = [same_chain]*len(pdbs)
@@ -106,9 +109,9 @@ def msa_with_modeller(alignment_file, combined_fasta):
 
     #Write final alignment
     aln.write(file=alignment_file, alignment_format='PIR')
+'''
 
-
-def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
+def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
     """
     Perform a built-in structural alignment.
 
@@ -137,7 +140,9 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs'):
         pdbs = os.listdir(pdb_dir) 
 
     #Sort pdbs by name
-    pdbs.sort()  
+    if sort_pdbs==True:
+        pdbs.sort()  
+
 
     #Initialize dictionary to contain rotation and translation matrices
     rotation_information = {'Rot': [], 'Trans': []}
