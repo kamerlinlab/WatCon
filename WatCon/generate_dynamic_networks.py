@@ -959,9 +959,52 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                 CPL = nx.average_shortest_path_length(largest_cc)
 
         return CPL
+
+    def get_shortest_path(self, selection='all', source=None, target=None):
+        """
+        Calculate the shortest path for a given network
+
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+        source : int, optional
+            Source node to initialize path
+        target : int, optional
+            Target node to terminate path
+
+        Returns
+        -------
+        list
+            Nodes corresponding to the shortest path.
+
+
+        Note
+        ----
+        Node indexes are equivalent to MDAnalysis 0-based atom indexing (Add 1 to your pdb atom numbering!)
+        """
+        if selection=='all':
+            S = self.graph
+        else:
+            S = self.graph.edge_subgraph([(edge1, edge2) for (edge1,edge2, data) in self.graph.edges(data=True) if data['active_site']==selection])
+
+        shortest_path = nx.shortest_path(S, source, target)
+        return shortest_path
     
     def get_clustering_coefficient(self, selection='all'):
+        """
+        Calculate the clustering coefficient for each node
 
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+
+        Returns
+        -------
+        dict
+            Clustering coefficient at each node position      
+        """
         #Choose all subgraphs under particular criteria
         if selection=='all':
             S = self.graph
@@ -1090,15 +1133,41 @@ def get_clusters(coordinates, cluster, min_samples=10, eps=0.0, n_jobs=1, filena
 
     return cluster_labels, cluster_centers
 
-def collect_densities(pdb_file, trajectory_file, active_site_definition, custom_selection, water_name, water_oxygen, output_name):
+def collect_densities(topology_file, trajectory_file, active_site_definition, custom_selection, 
+                      water_name, water_oxygen, output_name):
+    """
+    Calculate density of water positions, output density file, calculate hotspots from densities, and output PDB file corresponding to cluster hotspots.
+
+    Parameters
+    ----------
+    pdb_file : str
+        Full path to MDAnalysis-readable topology file
+    trajectory_file : str
+        Full path to MDAnalysis-readable trajectory file
+    active_site_definition : str
+        MDAnalysis selection language to define active site
+    custom_selection : str
+        MDAnalysis selection language to include custom residues in protein definition
+    water_name : str
+        Resname for water
+    water_oxygen : str
+        Atom name for water oxygens
+    output_name : str
+        Basename for output file (will automatically be given the .dx extension)
+    
+    Returns
+    -------
+    array-like
+        Coordinates of density hotspots
+    """
     from MDAnalysis.analysis import align, density
     from find_conserved_networks import find_clusters_from_densities
 
     #Perform density analysis
-    ref = mda.Universe(pdb_file)
+    ref = mda.Universe(topology_file)
     if not isinstance(trajectory_file, list):
         trajectory_file = [trajectory_file]
-    u = mda.Universe(pdb_file, *trajectory_file)
+    u = mda.Universe(topology_file, *trajectory_file)
     align.AlignTraj(u, ref, select='name CA', in_memory=True).run()
     ag = u.select_atoms(f'protein or {custom_selection}')
     ag.write(f'{output_name}.pdb')
@@ -1110,6 +1179,7 @@ def collect_densities(pdb_file, trajectory_file, active_site_definition, custom_
     D.density.export(f"{output_name}.dx", type='double')
 
     hotspot_coords = find_clusters_from_densities(f"{output_name}.dx", output_name=f"{output_name}_densityclusters", threshold=1.5)
+    return hotspot_coords
 
 def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type, custom_selection, 
                               active_site_reference, active_site_radius, water_name, msa_indexing, 
@@ -1238,7 +1308,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=False, 
                        cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True, 
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=False,
-                       classification_file_base='DYNAMIC', MSA_reference_pdb=None, water_reference_resids=None,  num_workers=4):
+                       classification_file_base='DYNAMIC', MSA_reference_pdb=None, water_reference_resids=None,  num_workers=4, shortest_path_nodes=None):
     
     """
     Initialize and compute all water networks per frame for a trajectory.
@@ -1308,6 +1378,8 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         List of residue indices used for water angle analysis in a specific PDB file. Default is None.
     num_workers : int, optional
         Number of CPU cores to use for parallel computation. Default is 4.
+    shortest_path_nodes : list, optional
+        List of tuples of nodes to perform shortest path analysis among. Default is None (shortest path among entire network will be returned)
 
     Returns
     -------
@@ -1368,6 +1440,14 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             metrics['entropy'] = network.get_entropy(selection=analysis_selection)
         if analysis_conditions['clustering_coefficient'] == 'on':
             metrics['clustering_coefficient'] = network.get_clustering_coefficient(selection=analysis_selection)
+
+        if analysis_conditions['shortest_path'] == 'on':
+            if shortest_path_nodes is None:
+                metrics['shortest_path'] = network.get_shortest_path(selection=analysis_selection)
+            else:
+                metrics['shortest_path'] = []
+                for (source, target) in shortest_path_nodes:
+                    metrics['shortest_path'].append(network.get_shortest_path(selection=analysis_conditions, source=source, target=target))
         #clustering coefficient -- https://www.annualreviews.org/content/journals/10.1146/annurev-physchem-050317-020915
 
         #Classify waters
@@ -1418,13 +1498,14 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
     if analysis_conditions == 'all':
         analysis_conditions = {
-            'density': True,
-            'connected_components': True,
-            'interaction_counts': True,
-            'per_residue_interactions': True,
-            'characteristic_path_length': True,
-            'graph_entropy': True,
-            'clustering_coefficient': True
+            'density': 'on',
+            'connected_components': 'on',
+            'interaction_counts': 'on',
+            'per_residue_interactions': 'on',
+            'characteristic_path_length': 'on',
+            'graph_entropy': 'on',
+            'clustering_coefficient': 'on',
+            'shortest_path': 'on'
         }
 
     #Create universe object just once to get number of frames

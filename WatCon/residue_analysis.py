@@ -520,7 +520,6 @@ def plot_interactions_from_angles(csvs, input_dir='classification_csvs',output_d
                     classification = classifications[name][MSA][i]
                     color = colors['STATIC']['backbone'] if 'backbone' in classification else colors['STATIC']['sidechain']
                     name_new = pdb_names[name][MSA][i]
-                    print(name_new)
                     if 'open' in name_new or 'Open' in name_new:
                         facecolor='none'
                     else:

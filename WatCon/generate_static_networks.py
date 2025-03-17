@@ -1056,6 +1056,37 @@ class WaterNetwork:
 
         return coords
 
+    def get_shortest_path(self, selection='all', source=None, target=None):
+        """
+        Calculate the shortest path for a given network
+
+        Parameters
+        ----------
+        selection : {'all', 'active_site', 'not_active_site'}
+            Specifies which subset of the graph to analyze.
+        source : int, optional
+            Source node to initialize path
+        target : int, optional
+            Target node to terminate path
+
+        Returns
+        -------
+        list
+            Nodes corresponding to the shortest path.
+
+
+        Note
+        ----
+        Node indexes are equivalent to MDAnalysis 0-based atom indexing (Add 1 to your pdb atom numbering!)
+        """
+        if selection=='all':
+            S = self.graph
+        else:
+            S = self.graph.edge_subgraph([(edge1, edge2) for (edge1,edge2, data) in self.graph.edges(data=True) if data['active_site']==selection])
+
+        shortest_path = nx.shortest_path(S, source, target)
+        return shortest_path
+
 
 def extract_objects(pdb_file, network_type, custom_selection, active_site_reference, active_site_radius,
                      water_name, msa_indexing, active_site_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0):
@@ -1200,7 +1231,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=True,
                        cluster_coordinates=False, clustering_method='hdbscan', cluster_water_only=True, min_cluster_samples=15, eps=None, msa_indexing=True,
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=True, classification_file_base='STATIC',
-                       MSA_reference_pdb=None, water_reference_resids=None, num_workers=4):
+                       MSA_reference_pdb=None, water_reference_resids=None, num_workers=4, shortest_path_nodes=None):
                        
     """
     Initialize and compute all water networks for a directory of pdbs.
@@ -1270,6 +1301,9 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
         List of residue indices used for water angle analysis in a specific PDB file. Default is None.
     num_workers : int, optional
         Number of CPU cores to use for parallel computation. Default is 4.
+    shortest_path_nodes : list, optional
+        List of tuples of nodes to perform shortest path analysis among. Default is None (shortest path among entire network will be returned)
+
 
     Returns
     -------
@@ -1363,6 +1397,14 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             metrics['entropy'] = network.get_entropy(selection=analysis_selection)
         if analysis_conditions['clustering_coefficient'] == 'on':
             metrics['clustering_coefficient'] = network.get_clustering_coefficient(selection=analysis_selection)
+
+        if shortest_path_nodes is None:
+            metrics['shortest_path'] = network.get_shortest_path(selection=analysis_selection)
+        else:
+            metrics['shortest_path'] = []
+            for (source, target) in shortest_path_nodes:
+                metrics['shortest_path'].append(network.get_shortest_path(selection=analysis_conditions, source=source, target=target))
+
         #clustering coefficient -- https://www.annualreviews.org/content/journals/10.1146/annurev-physchem-050317-020915
 
         #Save coodinates for clustering
@@ -1397,7 +1439,8 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             'per_residue_interactions': 'on',
             'characteristic_path_length': 'on',
             'graph_entropy': 'on',
-            'clustering_coefficient': 'on'
+            'clustering_coefficient': 'on',
+            'shortest_path': 'on'
         }
 
 

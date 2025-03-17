@@ -361,6 +361,43 @@ def identify_conserved_water_interactions_clustering(networks, clusters, max_con
 
 
 def identify_conserved_waterprotein_interactions_angles(classification_file):
+    """
+    NOTE: NOT TESTED YET
+    """
+    from scipy.optimize import minimize
+
+    def angle_constraint(wat,prot,ref,theta):
+        wat = np.array(wat)
+        prot = np.array(prot)
+        ref = np.array(ref)
+
+        v1 = wat - prot
+        v2 = ref - prot
+
+        cos_theta = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+        return np.cos(theta) - cos_theta
+    
+    def dist_norm(wat, prot):
+        return np.linalg.norm(wat - prot)
+    
+    def find_wat_coords(prot_coords, ref1_coords, ref2_coords, theta1, theta2):
+        theta1 = np.radians(theta1)
+        theta2 = np.radians(theta2)
+
+        w0 = (np.array(ref1_coords)+np.array(ref2_coords))/2
+
+        constraints = (
+            {'type': 'eq', 'fun': angle_constraint, 'args': (prot_coords, ref1_coords, theta1)},
+            {'type': 'eq', 'fun': angle_constraint, 'args': (prot_coords, ref2_coords, theta2)}
+        )
+
+        result = minimize(dist_norm, w0, args=(prot_coords,), constraints=constraints)
+
+        if result.success:
+            return result.x
+        else:
+            raise ValueError('Optimization failed')
+
     df = pd.read_csv(classification_file, delimiter=',')
 
     classification_dict = {}
@@ -400,6 +437,8 @@ def identify_conserved_waterprotein_interactions_angles(classification_file):
                     if label not in cluster_conservation_dict[str(msa_resid)].keys():
                         cluster_conservation_dict[str(msa_resid)][str(label)] = {'counts': 0, 'center':cluster_centers[label]}
                     cluster_conservation_dict[str(msa_resid)][str(label)]['counts'] += 1
+
+            
 
     return cluster_conservation_dict
 
