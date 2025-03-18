@@ -130,6 +130,7 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', 
         Dictionary containing rotation and translation matrices for each PDB.
     """
 
+    os.makedirs(out_dir, exist_ok=True)
     #Initialize environment
     env = Environ()
 
@@ -201,7 +202,7 @@ class ChainAndNonProteinSelect(Select):
             return True
         return False
 
-def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='aligned_pdbs_with_water'):
+def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='aligned_pdbs_with_water', selected_chain_only=True):
     """
     Apply transformation matrices from structural alignment to translate water molecules.
 
@@ -257,7 +258,10 @@ def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='
 
         io = PDBIO()
         io.set_structure(structure)
-        io.save(f"{out_dir}/{pdb.split('.')[0]}_aligned.pdb",ChainAndNonProteinSelect())
+        if selected_chain_only:
+            io.save(f"{out_dir}/{pdb.split('.')[0]}_aligned.pdb",ChainAndNonProteinSelect())
+        else:
+            io.save(f"{out_dir}/{pdb.split('.')[0]}_aligned.pdb")
 
 
 def seq_similarity(seq1, seq2):
