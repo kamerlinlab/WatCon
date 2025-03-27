@@ -71,14 +71,14 @@ An example of a WatCon input file is provided below.
    clustering_coefficient: on
    save_coordinates: on
    analysis_selection: all                          ; Selection for analysis 
-                                                    ;     (all, active_site, not_active_site)
+                                                    ;     (all, active_region, not_active_region)
    
    ; Active site definition
-   active_site_reference: resid#220#and#name#CA     ; MDAnalysis selection language to center active site
+   active_region_reference: resid#220#and#name#CA     ; MDAnalysis selection language to center active site
    
-   active_site_only: on                             ; Indicate whether to only calculate water networks
+   active_region_only: on                             ; Indicate whether to only calculate water networks
                                                     ;     around an active site 
-   active_site_radius: 11                           ; Radius of active site around refernce
+   active_region_radius: 11                           ; Radius of active site around refernce
    
    ; Visualization
    project_networks: off                            ; Create PyMOL files per pdb/frame
@@ -98,7 +98,7 @@ An example of a WatCon input file is provided below.
    combined_fasta: all_fastas.fa                    ; Name of combined fasta file
    fasta_directory: fasta                           ; Directory containing individual fasta files
    MSA_reference_pdb: WT_PTP1B_Unlig_Open.gro         ; Any pdb which can be used as a reference
-                                                    ;     (active_site_reference needs to be accurate 
+                                                    ;     (active_region_reference needs to be accurate 
                                                     ;     for this structure)
    
    ; Classify waters from MSA

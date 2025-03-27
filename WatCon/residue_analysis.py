@@ -46,14 +46,14 @@ def get_waterprotein_interactions(network_group):
                 waterprotein_interactions += 1
                 waterprotein_connections.append((cn1, cn2))
 
-                if data['active_site'] == 'active_site':
+                if data['active_region'] == 'active_region':
                     activeprotein += 1
                     activeprotein_connections.append((cn1, cn2))
             else:
                 water_interactions += 1
                 waterwater_connections.append((cn1, cn2))
 
-                if data['active_site'] == 'active_site':
+                if data['active_region'] == 'active_region':
                     activewater += 1
                     activewater_connections.append((cn1, cn2))
 
@@ -102,14 +102,14 @@ def get_waterprotein_interactions_singleframe(network):
             waterprotein_interactions += 1
             waterprotein_connections.append((cn1, cn2))
 
-            if data['active_site'] == 'active_site':
+            if data['active_region'] == 'active_region':
                 activeprotein += 1
                 activeprotein_connections.append((cn1, cn2))
         else:
             water_interactions += 1
             waterwater_connections.append((cn1, cn2))
 
-            if data['active_site'] == 'active_site':
+            if data['active_region'] == 'active_region':
                 activewater += 1
                 activewater_connections.append((cn1, cn2))
 
@@ -136,7 +136,7 @@ def get_interaction_counts(network, selection='all'):
     Parameters
     ----------
     network : WaterNetwork object
-    selection : {'all', 'active_site', 'not_active_site'}
+    selection : {'all', 'active_region', 'not_active_region'}
         Specifies which subset of the graph to analyze.
 
     Returns
@@ -152,7 +152,7 @@ def get_interaction_counts(network, selection='all'):
             else:
                 interaction_counts['water-water'] += 1
         else:
-            if data['active_site'] == selection:
+            if data['active_region'] == selection:
                 if data['connection_type']=='WAT-PROT':
                     interaction_counts['water-protein'] += 1
                 else:
@@ -165,7 +165,7 @@ def get_per_residue_interactions(network, selection='all'):
     if selection == 'all':
         edges = [(_,_,data) for (_,_,data) in network.graph.edges(data=True) if data['connection_type']=='WAT-PROT']
     else:
-        edges = [(_,_,data) for (_,_,data) in network.graph.edges(data=True) if data['active_site']==selection and data['connection_type']=='WAT-PROT']
+        edges = [(_,_,data) for (_,_,data) in network.graph.edges(data=True) if data['active_region']==selection and data['connection_type']=='WAT-PROT']
     for (cn1, cn2, data) in edges:
         try:
             cn1_res = [f.resid for f in network.water_molecules if cn1==f.O.index][0]
@@ -198,7 +198,7 @@ def get_per_residue_interactions(network, selection='all', msa=False):
     Parameters
     ----------
     network : WaterNetwork object
-    selection : {'all', 'active_site', 'not_active_site'}
+    selection : {'all', 'active_region', 'not_active_region'}
         Specifies which subset of the graph to analyze.
     msa : bool, optional
         Indicate whether to use msa common residue indices
@@ -221,7 +221,7 @@ def get_per_residue_interactions(network, selection='all', msa=False):
     residue_dict = {}
     edges = [
         (cn1, cn2, data) for (cn1, cn2, data) in network.graph.edges(data=True)
-        if data['connection_type'] == 'WAT-PROT' and (selection == 'all' or data['active_site'] == selection)
+        if data['connection_type'] == 'WAT-PROT' and (selection == 'all' or data['active_region'] == selection)
     ]
 
     for cn1, cn2, _ in edges:
@@ -348,6 +348,9 @@ def classify_waters(network, ref1_coords, ref2_coords):
             
     if ref2_coords is None:
         ref2_coords = [(10,0,10)]
+
+    #print('ref1:', ref1_coords)
+    #print('ref2:', ref2_coords)
     
     #THERE IS SOME WEIRD STUFF GOING ON WITH THESE SHAPES
     if type(ref1_coords) == tuple:
@@ -388,7 +391,7 @@ def classify_waters(network, ref1_coords, ref2_coords):
         if len(prot_coords) > 0:
             angle1 = get_angles(wat_coords, prot_coords, ref_coords=ref1_coords)
             angle2 = get_angles(wat_coords, prot_coords, ref_coords=ref2_coords)
-            prot_name = [f"{f.resid}, {f.msa_resid}, {connection[0]}, {connection[1]}, {connection[2]}, {connection[5]}" for f in network.protein_atoms if (f.index == connection[0] or f.index == connection[1])][0]
+            prot_name = [f"{f.resid}, {f.msa_resid}, {connection[0]}, {connection[1]}, {connection[2]}, {connection[5]}, {f.coordinates[0]} {f.coordinates[1]} {f.coordinates[2]}" for f in network.protein_atoms if (f.index == connection[0] or f.index == connection[1])][0]
             classification_dict[prot_name] = [angle1, angle2] #Consider combining into one value
         else:
             continue
@@ -398,12 +401,12 @@ def classify_waters(network, ref1_coords, ref2_coords):
 """
 def plot_waterprotein_interactions(network_group):
     all_interaction_dict = get_waterprotein_interactions(network_group)
-    active_site_interaction = get_waterprotein_interactions(network_group)
+    active_region_interaction = get_waterprotein_interactions(network_group)
     fig, ax = plt.subplots(2, figsize=(6,4), tight_layout=True)
     n_frames = len(network_group)
     frames = np.arange(n_frames, 1)
     ax[0].plot(frames, all_interaction_dict['Water_Protein'], color='k', label='Full protein')
-    ax[1].plot(frames, active_site_interaction['Water_Protein'], color='r', label='Active site only')
+    ax[1].plot(frames, active_region_interaction['Water_Protein'], color='r', label='Active site only')
     fig.supxlabel('Frame')
     fig.supylabel('Number of protein/water interactions')
     plt.show()
@@ -560,6 +563,7 @@ def histogram_metrics(all_files, input_directory, concatenate):
     None
 
     """
+    import pickle
 
     #Initialize dictionaries to store data
     metrics = ['density', 'characteristic_path_length', 'entropy']
@@ -594,20 +598,20 @@ def histogram_metrics(all_files, input_directory, concatenate):
     #Create list to store other dictionaries
     metric_dicts = []
     for file in all_files:
-        metric_dict = {'density':[],'characteristic_path_length':[], 'entropy':[], 'water-water':[], 'water-protein':[]}
+        metric_dict_static = {'density':[],'characteristic_path_length':[], 'entropy':[], 'water-water':[], 'water-protein':[]}
         watcon_file = os.path.join(input_directory, file)
         with open(watcon_file, 'rb') as FILE:
             e = pickle.load(FILE)
 
-        for ts_dict in e[1]:
-            metric_dict['water-water'].append(ts_dict['interaction_counts']['water-water'])
-            metric_dict['water-protein'].append(ts_dict['interaction_counts']['water-protein'])
+        for ts_dict in e[0]:
+            metric_dict_static['water-water'].append(ts_dict['interaction_counts']['water-water'])
+            metric_dict_static['water-protein'].append(ts_dict['interaction_counts']['water-protein'])
             for metric in metrics:
                 if isinstance(ts_dict[metric], float):
                     metric_dict_static[metric].append(ts_dict[metric])
                 else:
                     metric_dict_static[metric].extend(f for f in ts_dict[metric])
-        metric_dicts.append(metric_dict)
+        metric_dicts.append(metric_dict_static)
 
     #Begin plotting
     for i, metric in enumerate(metrics_plot):
@@ -627,7 +631,7 @@ def histogram_metrics(all_files, input_directory, concatenate):
             metric_cur = np.array(metric_dict[metric])
 
 
-            hist, xedges = np.histogram(metric_cur_static, bins=15, density=True)
+            hist, xedges = np.histogram(metric_cur, bins=15, density=True)
             xcenters = (xedges[1:]+xedges[:-1])/2
             ax.plot(xcenters, hist, label=f'Sample {i}')
 

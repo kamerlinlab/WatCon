@@ -54,7 +54,26 @@ def collect_coordinates(pkl_list):
 
     return np.array(combined_coords)
 
+def get_coordinates_from_topology(pdb_file, atom_selection='all'):
+    """
+    Collect coordinates from a given MDAnalysis-readable topology file
 
+    Parameters
+    ----------
+    pdb_file : str
+        Full path to MDAnalysis-readable topology file
+
+    Returns
+    -------
+    np.ndarray
+        Array of coordinates
+    """
+
+    u = mda.Universe(pdb_file)
+    ag = u.select_atoms(atom_selection)
+
+    coords = ag.positions
+    return np.array(coords).reshape(-1,3)
 
 def cluster_nodes(combined_graph, cluster='hdbscan', min_samples=10):
     """
@@ -273,12 +292,12 @@ def create_clustered_network(clusters, max_connection_distance, create_graph=Tru
         for molecule in clustered_network.water_molecules:
                 G.add_node(molecule.O.index, pos=molecule.O.coordinates, atom_category='WAT', MSA=None) #have nodes on all oxygens
         for connection in clustered_network.connections:
-                G.add_edge(connection[0], connection[1], connection_type=connection[3], active_site=connection[4])
+                G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
 
         clustered_network.graph = G
     return clustered_network
 
-def identify_conserved_water_interactions_clustering(networks, clusters, max_connection_distance=3.0, dist_cutoff=1.0, filename_base='CLUSTER'):
+def identify_conserved_water_interactions_clustering(networks, clusters, max_connection_distance=2.0, dist_cutoff=1.0, filename_base='CLUSTER'):
     """
     Rank water-water interactions in relation to clustering.
 
@@ -360,12 +379,15 @@ def identify_conserved_water_interactions_clustering(networks, clusters, max_con
     return interaction_dict
 
 
-def identify_conserved_waterprotein_interactions_angles(classification_file):
+def identify_clustered_angles(classification_file, ref1_coords, ref2_coords):
     """
     NOTE: NOT TESTED YET
+
+    MAKE IT SO THAT YOU CLUSTER FOR CRYSTAL STRUCTURES AND TAKE MINIMUM COORDINATES FOR MD
     """
     from scipy.optimize import minimize
 
+    '''
     def angle_constraint(wat,prot,ref,theta):
         wat = np.array(wat)
         prot = np.array(prot)
@@ -376,7 +398,13 @@ def identify_conserved_waterprotein_interactions_angles(classification_file):
 
         cos_theta = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
         return np.cos(theta) - cos_theta
-    
+    '''
+
+    def angle_constraint(wat, *args):
+        prot, ref, theta = args
+        return np.cos(theta) - np.dot(wat - prot, ref - prot) / (np.linalg.norm(wat - prot) * np.linalg.norm(ref - prot))
+
+
     def dist_norm(wat, prot):
         return np.linalg.norm(wat - prot)
     
@@ -385,13 +413,14 @@ def identify_conserved_waterprotein_interactions_angles(classification_file):
         theta2 = np.radians(theta2)
 
         w0 = (np.array(ref1_coords)+np.array(ref2_coords))/2
+        w0 = (np.array(ref1_coords) + np.array(ref2_coords)) / 2 + 0.1 * (np.array(prot_coords) - w0)
 
         constraints = (
             {'type': 'eq', 'fun': angle_constraint, 'args': (prot_coords, ref1_coords, theta1)},
             {'type': 'eq', 'fun': angle_constraint, 'args': (prot_coords, ref2_coords, theta2)}
         )
 
-        result = minimize(dist_norm, w0, args=(prot_coords,), constraints=constraints)
+        result = minimize(dist_norm, w0, args=(prot_coords,), constraints=constraints, method='trust-constr')
 
         if result.success:
             return result.x
@@ -401,11 +430,14 @@ def identify_conserved_waterprotein_interactions_angles(classification_file):
     df = pd.read_csv(classification_file, delimiter=',')
 
     classification_dict = {}
+    coord_dict = {}
 
     for i, row in df.iterrows():
         if str(row['MSA_Resid']) not in classification_dict.keys():
             classification_dict[str(row['MSA_Resid'])] = []
+            coord_dict[str(row['MSA_Resid'])] = []
         classification_dict[str(row['MSA_Resid'])].append((float(row['Angle_1']), float(row['Angle_2'])))
+        coord_dict[str(row['MSA_Resid'])].append(np.array([float(f) for f in row['Protein_Coords'].split()]))
 
 
     cluster_conservation_dict = {}
@@ -429,18 +461,56 @@ def identify_conserved_waterprotein_interactions_angles(classification_file):
             for label in [f for f in unique_labels if f != -1]:
                 cluster_indices = np.where(cluster_labels == label)[0]
                 cluster_center = np.mean(np.array([values[i] for i in cluster_indices]), axis=0)
-        
                 cluster_centers[label] = cluster_center
+
+            centroid_coords = {}
+            for label, center in cluster_centers.items():
+                min_distance=1000
+                for val_ind, val in enumerate(values):
+                    if np.linalg.norm([center, val]) < min_distance:
+                        closest_coord = coord_dict[str(msa_resid)][val_ind]
+
+                centroid_coords[label] = closest_coord
 
             for label in cluster_labels:
                 if label != -1:
                     if label not in cluster_conservation_dict[str(msa_resid)].keys():
-                        cluster_conservation_dict[str(msa_resid)][str(label)] = {'counts': 0, 'center':cluster_centers[label]}
+                        cluster_conservation_dict[str(msa_resid)][str(label)] = {'counts': 0, 'center':cluster_centers[label], 'closest_coord': centroid_coords[label]}
+
+                        print(centroid_coords[label], ref1_coords, ref2_coords, *cluster_centers[label])
+                        wat_coords = find_wat_coords(centroid_coords[label], ref1_coords, ref2_coords, *cluster_centers[label])
+                        cluster_conservation_dict[str(msa_resid)][str(label)] = {'wat_coord': wat_coords}
                     cluster_conservation_dict[str(msa_resid)][str(label)]['counts'] += 1
 
-            
-
     return cluster_conservation_dict
+
+
+def plot_consevation_angles(cluster_conservation_dict, output_filebase='angle_clusters', output_dir='pymol_projections'):
+    with open(os.path.join(output_dir, f"{output_filebase}.pml")) as FILE:
+        for msa in cluster_conservation_dict.items():
+            for i, label in enumerate(cluster_conservation_dict[msa].keys()):
+                water_coord = cluster_conservation_dict[msa][label]['wat_coord']
+                prot_coord = cluster_conservation_dict[msa][label]['closest_coord']
+
+                strength = cluster_conservation_dict[msa][label]['wat_coord']
+
+
+                FILE.write(f"pseudoatom {msa}_{i}_protein, pos={prot_coord}\n")
+                FILE.write(f"pseudoatom {msa}_{i}_water, pos={water_coord}\n")
+                FILE.write(f"distance interaction_{msa}_{i}, {msa}_{i}_protein, {msa}_{i}_water\n")
+        
+        FILE.write("hide labels, all\n")
+        FILE.write('set dash_radius, 0.15, interaction*\n')    
+        FILE.write('set dash_gap, 0.0, interaction*\n')
+        FILE.write('hide labels, interaction*\n')
+        FILE.write('set sphere_scale, 0.2\n')
+        FILE.write('set sphere_color, oxygen, *_water')
+        FILE.write('bg white\n')
+        FILE.write('group AngleInteractions, interaction*\n')
+        FILE.write('group PseudoProteins, *_protein\n')
+        FILE.write('group PseudoWater, *_water\n')
+
+
 
 
 def find_clusters_from_densities(density_file, output_name=None, threshold=1.5):

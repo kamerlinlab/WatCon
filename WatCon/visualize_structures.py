@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_projections', active_site_only=False, water_only=False):
+def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_projections', active_region_only=False, water_only=False):
     """
     Generate a PyMOL (.pml) file to visualize the calculated network.
 
@@ -19,7 +19,7 @@ def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_
         Name of the output .pml file.
     out_path : str
         Directory where the output file will be saved.
-    active_site_only : bool, optional
+    active_region_only : bool, optional
         Whether to include only active site connections. Default is False.
     water_only : bool, optional
         Whether to show only water-water connections. Default is False.
@@ -35,10 +35,10 @@ def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_
         #for i, mol in enumerate(network.water_molecules):
             #FILE.write(f"show spheres, id {mol.O.index+1}\nset sphere_scale, 0.3, id {mol.O.index+1}\n")
 
-        #If active_site_only, then only project connections within the active site. Note this is redundant if you have 
+        #If active_region_only, then only project connections within the active site. Note this is redundant if you have 
         #chosen to only include active site atoms in your whole network
-        if active_site_only:
-            connection_list = [f for f in network.connections if f[4]=='active_site']
+        if active_region_only:
+            connection_list = [f for f in network.connections if f[4]=='active_region']
         else:
             connection_list = network.connections
 
@@ -60,7 +60,7 @@ def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_
         FILE.write(f"group WaterNetwork, interaction*\n")
 
 
-def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=True, b_factors=None):
+def project_clusters(coordinate_list, filename_base='CLUSTER',b_factors=None):
     """
     Generate a PDB file to visualize cluster centers.
 
@@ -87,25 +87,18 @@ def project_clusters(coordinate_list, filename_base='CLUSTER', separate_files=Tr
     if b_factors is None:
         b_factors = [0.00] * len(coordinate_list)  # Default B-factor is 0.00 if not provided
 
+    os.makedirs('cluster_pdbs', exist_ok=True)
 
-    if separate_files == True:
-        for label, center in enumerate(coordinate_list):
-            #Create a filename for the cluster
-            filename = f"{filename_base}_{label}.xyz"
-            with open(filename, 'w') as FILE:
-                # Write the cluster center's coordinates to the file
-                FILE.write(f"O\t{center[0]:.3f} {center[1]:.3f} {center[2]:.3f}\n")
-    else:
-        filename = f"{filename_base}.pdb"
-        with open(filename, 'w') as FILE:
-            atom_serial = 1
-            for label, (center, b_factor) in enumerate(zip(coordinate_list, b_factors)):
-                # Write each cluster center as an oxygen atom in PDB format
-                FILE.write(
-                    f"ATOM  {atom_serial:5d}  O   HOH A{label:4d}    "
-                    f"{center[0]:8.3f}{center[1]:8.3f}{center[2]:8.3f}  1.00 {b_factor:6.2f}           O\n"
-                )
-                atom_serial += 1
+    filename = f"cluster_pdbs/{filename_base}.pdb"
+    with open(filename, 'w') as FILE:
+        atom_serial = 1
+        for label, (center, b_factor) in enumerate(zip(coordinate_list, b_factors)):
+            # Write each cluster center as an oxygen atom in PDB format
+            FILE.write(
+                f"ATOM  {atom_serial:5d}  O   HOH A{label:4d}    "
+                f"{center[0]:8.3f}{center[1]:8.3f}{center[2]:8.3f}  1.00 {b_factor:6.2f}           O\n"
+            )
+            atom_serial += 1
 
 
 def export_graph_to_pdb(graph, output_file):
@@ -127,18 +120,19 @@ def export_graph_to_pdb(graph, output_file):
     if not output_file.endswith('.pdb'):
         output_file = f"{output_file}.pdb"
 
-    with open(output_file, 'w') as f:
+    os.makedirs('graph_pdbs', exist_ok=True)
+    with open(f"graph_pdbs/{output_file}", 'w') as f:
         atom_serial = 1
         # Collect nodes involved in active site edges
-        active_site_nodes = set()
+        active_region_nodes = set()
         for edge1, edge2, data in graph.edges(data=True):
-            if data.get('active_site') == 'active_site':
-                active_site_nodes.add(edge1)
-                active_site_nodes.add(edge2)
+            if data.get('active_region') == 'active_region':
+                active_region_nodes.add(edge1)
+                active_region_nodes.add(edge2)
 
         # Write nodes as PDB atoms
         for node, data in graph.nodes(data=True):
-            if node in active_site_nodes:  # Check if node is part of active site
+            if node in active_region_nodes:  # Check if node is part of active site
                 x, y, z = data.get('pos', (0.0, 0.0, 0.0))  # Default position if not provided
                 f.write(
                     f"ATOM  {atom_serial:5d}  O   HOH A{atom_serial:4d}    {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           O\n"
