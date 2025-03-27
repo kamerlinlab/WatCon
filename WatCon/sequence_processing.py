@@ -11,7 +11,7 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 import os
 
-from modeller import *
+#from modeller import *
 
 
 ##First function could be revised to use salign instead of multiple instances of malign
