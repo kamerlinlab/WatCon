@@ -145,11 +145,12 @@ To increase ease in combining results across multiple trajectories or multiple s
     
     
     ; Density analysis
-    calculate_densities: on                        ; Use MDAnalysis density to output density of waters (ONLY FOR DYNAMIC_NETWORKS)
-    
+    calculate_densities: on                        ; Use MDAnalysis density to output density of waters (ONLY FOR DYNAMIC_NETWORKS)    
+    active_region_definition: around 11 (resid 220 and name CA) ; MDAnalysis selection language for active site
     
     ; Cluster conservation
-    cluster_file: STATIC.pdb                       ; Name of pdb file containing clusters to compare to
+    cluster_filebase: STATIC_CLOSED                     ; Name of pdb file containing clusters to compare to
+    cluster_concatenated: off                      ; Indicate whether to cluster concatenated coordinates
     calculate_commonality: bar                     ; Produce commonality plot either as a 'bar' bar graph or 'hist' histogram 
     color_by_conservation: all                     ; Produce .pml file coloring either 'centers', 'connections' or 'all' by conservation
     

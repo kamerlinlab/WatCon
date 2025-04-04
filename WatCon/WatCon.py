@@ -183,11 +183,11 @@ def run_watcon(structure_type, kwargs):
     results = initialize_network(**kwargs)
     return results
 
-def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', histogram_metrics=True, 
+def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', histogram_metrics=False, 
                         calculate_densities=False, density_pdb=None, traj_directory=None, active_region_definition=None, 
                         custom_selection=None, water_name=None, cluster_concatenated=False, cluster_method='hdbscan', eps=0.0,
                         n_jobs=1, min_samples=100, cluster_filebase='CLUSTER', calculate_commonality='bar', color_by_conservation=None, 
-                        classify_waters=True, csv_dir='classification_csvs'):
+                        classify_waters=True, csv_dir='msa_classification'):
     """
     Run WatCon analysis from input file
 

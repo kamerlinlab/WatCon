@@ -318,7 +318,6 @@ class WaterNetwork:
                 active_region_atoms.append(mol)
                 water_active.append(mol)
 
-
         self.active_region = list(active_region_atoms)  # Convert set back to list if order matters
         return self.active_region, list(protein_active), list(water_active)
 
@@ -940,7 +939,7 @@ class WaterNetwork:
         Returns
         -------
         float
-            The characteristic path length of the selected network.
+            The average characteristic path length of the selected network.
         """
         #Choose all subgraphs under particular criteria
         if selection=='all':
@@ -1128,7 +1127,7 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
         If True, only includes active site atoms in the network. Default is False.
     directed : bool, optional
         If True, constructs a directed network. Default is False.
-    angle_criteria : float or None, optional
+    angle_criteria : float or None, optioronal
         Angle cutoff criteria for hydrogen-bonding structures. Default is None.
     max_connection_distance : float, optional
         Maximum distance (in Å) for defining connections in the network. Default is 3.0.
@@ -1368,8 +1367,51 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             resids = u.residues.resids.tolist()
             reference_resids, msa_indices_reference = references
 
-            msa_active_region_ref = sequence_processing.convert_msa_to_individual(msa_indices=msa_indices, msa_indices_ref=msa_indices_reference, resids=resids, resid_sequence_ref=reference_resids, resid_individual_ref=int(active_region_reference.split()[1]))
-            msa_active_region_ref = f"resid {msa_active_region_ref} {' '.join(active_region_reference.split()[2:])}"
+            #print(active_region_reference.split())
+            #numbers = [f for f in active_region_reference if f.isnumeric()]
+            #if len(numbers) == 1:
+            #    msa_active_region_ref = sequence_processing.convert_msa_to_individual(msa_indices=msa_indices, msa_indices_ref=msa_indices_reference, resids=resids, resid_sequence_ref=reference_resids, resid_individual_ref=int(active_region_reference.split()[1]))
+            #    msa_active_region_ref = f"resid {msa_active_region_ref} {' '.join(active_region_reference.split()[2:])}"
+            #else:
+            #    msa_numbers = []
+            #    for num in numbers:
+            #        msa_active_region_num = sequence_processing.convert_msa_to_individual(msa_indices=msa_indices,  msa_indices_ref=msa_indices_reference, resids=resids, resid_sequence_ref=reference_resids, resid_individual_ref=num)
+            #        msa_numbers.append(msa_active_region_num)
+                    
+
+            # Extract full numbers from the reference string
+            numbers = [num for num in active_region_reference.split() if num.isnumeric()]
+
+            if len(numbers) == 1:
+                msa_active_region_ref = sequence_processing.convert_msa_to_individual(
+                    msa_indices=msa_indices,
+                    msa_indices_ref=msa_indices_reference,
+                    resids=resids,
+                    resid_sequence_ref=reference_resids,
+                    resid_individual_ref=int(numbers[0])  # Convert to integer
+                )
+                msa_active_region_ref = f"resid {msa_active_region_ref} {' '.join(active_region_reference.split()[2:])}"
+
+            else:
+                msa_numbers = []
+                for num in numbers:
+                    msa_active_region_num = sequence_processing.convert_msa_to_individual(
+                        msa_indices=msa_indices,
+                        msa_indices_ref=msa_indices_reference,
+                        resids=resids,
+                        resid_sequence_ref=reference_resids,
+                        resid_individual_ref=int(num)  # Convert to integer
+                    )
+                    msa_numbers.append(str(msa_active_region_num))  # Ensure it's a string
+
+                # Replace original numbers with their MSA-mapped equivalents
+                words = active_region_reference.split()
+                for i, word in enumerate(words):
+                    if word in numbers:  # If the word was a number in the original reference
+                        words[i] = msa_numbers.pop(0)  # Replace in order
+
+                msa_active_region_ref = " ".join(words)  # Reconstruct the modified string
+
         else:
             msa_active_region_ref = active_region_reference
 
@@ -1484,7 +1526,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
         
         os.makedirs('msa_classification', exist_ok=True)
         with open(f'msa_classification/{classification_file_base}.csv', 'w') as FILE:
-            FILE.write('PDB ID,Resid,MSA_Resid,Index_1,Index_2,Protein_Atom,Classification,Protein_Coords,Angle_1,Angle_2\n')
+            FILE.write('PDB ID,Resid,MSA_Resid,Index_1,Index_2,Protein_Atom,Classification,Protein_Coords,Water_Coords,Angle_1,Angle_2\n')
 
     coords = []
 

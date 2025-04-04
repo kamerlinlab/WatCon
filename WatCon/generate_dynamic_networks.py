@@ -290,11 +290,11 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         protein_active = []
 
         reference_resids = {r.resid for r in reference}  # Set of reference resids for fast lookup
-
         for atm in self.protein_atoms:
             #Immediately include atoms which are a part of the reference
             if atm.resid in reference_resids:
                 active_region_atoms.append(atm)
+                protein_active.append(atm)
 
             #Include atoms within a distance cutoff
             else:
@@ -1343,8 +1343,24 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
         ag_wat = u.select_atoms(f'{water} and (sphzone {max_distance+0.5} protein)', updating=True)
         if not directed:
             ag_protein = u.select_atoms(f'(protein {custom_sel}) and (name N* or name O* or name P* or name S*)', updating=True)
-        else: 
-            ag_protein = u.select_atoms(f"(protein {custom_sel}) and (name H* or name N* or name O* or name P* or name S*)", updating=True)
+        else:
+            # Restrict hydrogens to those near polar atoms to minimize guess_bonds() overhead
+            polar_heavy = u.select_atoms(f'(protein {custom_sel}) and (name N* or name O* or name P* or name S*)')
+            hydrogens = u.select_atoms(f'protein {custom_sel} and name H*')
+
+            # Find hydrogens near these heavy atoms (within 1.2 Å, a typical H-bond distance)
+            from MDAnalysis.analysis.distances import distance_array
+
+            dists = distance_array(hydrogens.positions, polar_heavy.positions)
+            close_hydrogens = hydrogens[dists.min(axis=1) < 1.2]  # Select only close hydrogens
+
+            # Step 4: Combine hydrogens and polar atoms into one AtomGroup
+            relevant_atoms = close_hydrogens + polar_heavy
+            relevant_atoms.guess_bonds()  # Guess bonds only for relevant hydrogens
+
+
+            ag_protein = u.select_atoms(f"(protein {custom_sel}) and ((name H* and bonded (name N* or name O* or name P* or name S*)) or name N* or name O* or name P* or name S*)", updating=True)
+
         ag_misc = u.select_atoms(f'not (protein or {water})', updating=True) #Keeping this for non-biological systems or where other solvent is important
 
     except:
@@ -1515,6 +1531,59 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         else:
             msa_indices = None
 
+        if active_region_reference is not None and MSA_reference_pdb is not None:
+            u = mda.Universe(os.path.join(pdb_dir, pdb_file))
+            resids = u.residues.resids.tolist()
+            reference_resids, msa_indices_reference = references
+
+            #print(active_region_reference.split())
+            #numbers = [f for f in active_region_reference if f.isnumeric()]
+            #if len(numbers) == 1:
+            #    msa_active_region_ref = sequence_processing.convert_msa_to_individual(msa_indices=msa_indices, msa_indices_ref=msa_indices_reference, resids=resids, resid_sequence_ref=reference_resids, resid_individual_ref=int(active_region_reference.split()[1]))
+            #    msa_active_region_ref = f"resid {msa_active_region_ref} {' '.join(active_region_reference.split()[2:])}"
+            #else:
+            #    msa_numbers = []
+            #    for num in numbers:
+            #        msa_active_region_num = sequence_processing.convert_msa_to_individual(msa_indices=msa_indices,  msa_indices_ref=msa_indices_reference, resids=resids, resid_sequence_ref=reference_resids, resid_individual_ref=num)
+            #        msa_numbers.append(msa_active_region_num)
+                    
+
+            # Extract full numbers from the reference string
+            numbers = [num for num in active_region_reference.split() if num.isnumeric()]
+
+            if len(numbers) == 1:
+                msa_active_region_ref = sequence_processing.convert_msa_to_individual(
+                    msa_indices=msa_indices,
+                    msa_indices_ref=msa_indices_reference,
+                    resids=resids,
+                    resid_sequence_ref=reference_resids,
+                    resid_individual_ref=int(numbers[0])  # Convert to integer
+                )
+                msa_active_region_ref = f"resid {msa_active_region_ref} {' '.join(active_region_reference.split()[2:])}"
+
+            else:
+                msa_numbers = []
+                for num in numbers:
+                    msa_active_region_num = sequence_processing.convert_msa_to_individual(
+                        msa_indices=msa_indices,
+                        msa_indices_ref=msa_indices_reference,
+                        resids=resids,
+                        resid_sequence_ref=reference_resids,
+                        resid_individual_ref=int(num)  # Convert to integer
+                    )
+                    msa_numbers.append(str(msa_active_region_num))  # Ensure it's a string
+
+                # Replace original numbers with their MSA-mapped equivalents
+                words = active_region_reference.split()
+                for i, word in enumerate(words):
+                    if word in numbers:  # If the word was a number in the original reference
+                        words[i] = msa_numbers.pop(0)  # Replace in order
+
+                msa_active_region_ref = " ".join(words)  # Reconstruct the modified string
+
+        else:
+            msa_active_region_ref = active_region_reference
+
         #Create WaterNetwork object
         network = extract_objects_per_frame(pdb_file, traj_file, frame_idx, network_type, custom_selection, active_region_reference, active_region_COM,
                                             active_region_radius=active_region_radius, water_name=water_name, msa_indexing=msa_indices, 
@@ -1642,7 +1711,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         #Write header for classification file
         os.makedirs('msa_classification', exist_ok=True)
         with open(f'msa_classification/{classification_file_base}.csv', 'w') as FILE:
-            FILE.write('Frame Index,Resid,MSA_Resid,Index_1,Index_2,Protein_Atom,Classification,Protein_Coords,Angle_1,Angle_2\n')
+            FILE.write('Frame Index,Resid,MSA_Resid,Index_1,Index_2,Protein_Atom,Classification,Protein_Coords,Water_Coords,Angle_1,Angle_2\n')
 
 
     #Parallelized so there is one worker allocated for each frame

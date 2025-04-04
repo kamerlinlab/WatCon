@@ -101,6 +101,57 @@ def project_clusters(coordinate_list, filename_base='CLUSTER',b_factors=None):
             atom_serial += 1
 
 
+def plot_consevation_angles(cluster_conservation_dict, output_filebase='angle_clusters', output_dir='pymol_projections'):
+    os.makedirs(output_dir, exist_ok=True)
+
+    strengths = []
+
+
+    with open(os.path.join(output_dir, f"{output_filebase}.pml"), 'w') as FILE:
+        for msa in cluster_conservation_dict.keys():
+            for i, label in enumerate(cluster_conservation_dict[msa].keys()):
+                strength = cluster_conservation_dict[msa][label]['counts']
+                strengths.append(int(strength))
+
+    strengths = np.array(strengths)
+
+    cmap = plt.get_cmap('bwr')
+    len_colors = np.linspace(0,1,len(strengths))
+    colors = cmap(len_colors)
+
+    #colors = [(int(r*255), int(g*255), int(b*255)) for r, g, b, _ in colors]
+    colors = [(float(r), float(g), float(b)) for r, g, b, _ in colors]
+    colors = [color for _, color in sorted(zip(strengths, colors), key=lambda x: x[0])]
+
+    tick = 0
+    with open(os.path.join(output_dir, f"{output_filebase}.pml"), 'w') as FILE:
+        for msa in cluster_conservation_dict.keys():
+            for i, label in enumerate(cluster_conservation_dict[msa].keys()):
+                water_coord = cluster_conservation_dict[msa][label]['wat_coord']
+                prot_coord = cluster_conservation_dict[msa][label]['closest_coord']
+
+                strength = cluster_conservation_dict[msa][label]['counts']
+
+                FILE.write(f"pseudoatom {msa}_{i}_protein, pos=[{prot_coord[0]}, {prot_coord[1]}, {prot_coord[2]}]\n")
+                FILE.write(f"pseudoatom {msa}_{i}_water, pos=[{water_coord[0]}, {water_coord[1]}, {water_coord[2]}]\n")
+                FILE.write(f"distance interaction_{msa}_{i}, {msa}_{i}_protein, {msa}_{i}_water\n")
+                FILE.write(f"set dash_color, [{colors[tick][0]},{colors[tick][1]},{colors[tick][2]}], interaction_{msa}_{i}\n")
+                tick += 1
+
+        
+        FILE.write("hide labels, all\n")
+        FILE.write('set dash_radius, 0.15, interaction*\n')    
+        FILE.write('set dash_gap, 0.0, interaction*\n')
+        FILE.write('hide labels, interaction*\n')
+        FILE.write('set sphere_scale, 0.4\n')
+        FILE.write('set sphere_color, oxygen, *_water')
+        FILE.write('bg white\n')
+        FILE.write('group AngleInteractions, interaction*\n')
+        FILE.write('group PseudoProteins, *_protein\n')
+        FILE.write('group PseudoWater, *_water\n')
+        FILE.write('show spheres, PseudoProteins or PseudoWater\n')
+        FILE.write('color oxygen, PseudoWater\n')
+
 def export_graph_to_pdb(graph, output_file):
     """
     Generate a PDB file with dummy oxygen atoms at the coordinates of a given graph.

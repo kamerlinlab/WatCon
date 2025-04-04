@@ -174,7 +174,7 @@ def cluster_coordinates_only(coordinate_list, cluster='hdbscan', min_samples=10,
     return(cluster_labels, cluster_centers)
 
 
-def find_commonality(networks, centers, names):
+def find_commonality(networks, centers, names, dist_cutoff=3):
     """
     Find the commonality of a list of networks relative to a summary network created from clustering.
 
@@ -201,7 +201,7 @@ def find_commonality(networks, centers, names):
             x1 = wat.O.coordinates[0]
             y1 = wat.O.coordinates[1]
             z1 = wat.O.coordinates[2]
-            if any((dist(x1,y1,z1, x2,y2,z2)<3) for (x2, y2, z2) in centers):
+            if any((dist(x1,y1,z1, x2,y2,z2)<dist_cutoff) for (x2, y2, z2) in centers):
                 local_waters_count = len([wat for wat in net.water_molecules if (dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)<6 and dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)>2)])+1
                 conserved += 1/local_waters_count
             else:
@@ -252,7 +252,7 @@ def identify_conserved_water_clusters(networks, centers, dist_cutoff=1.0, filena
     scaler.fit(values)
 
     b_factors = scaler.transform(values).flatten()
-    project_clusters(centers, filename_base=filename_base, b_factors=b_factors, separate_files=False)
+    project_clusters(centers, filename_base=filename_base, b_factors=b_factors)
 
     return(center_dict)
 
@@ -387,61 +387,26 @@ def identify_clustered_angles(classification_file, ref1_coords, ref2_coords):
     """
     from scipy.optimize import minimize
 
-    '''
-    def angle_constraint(wat,prot,ref,theta):
-        wat = np.array(wat)
-        prot = np.array(prot)
-        ref = np.array(ref)
-
-        v1 = wat - prot
-        v2 = ref - prot
-
-        cos_theta = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-        return np.cos(theta) - cos_theta
-    '''
-
-    def angle_constraint(wat, *args):
-        prot, ref, theta = args
-        return np.cos(theta) - np.dot(wat - prot, ref - prot) / (np.linalg.norm(wat - prot) * np.linalg.norm(ref - prot))
-
-
-    def dist_norm(wat, prot):
-        return np.linalg.norm(wat - prot)
-    
-    def find_wat_coords(prot_coords, ref1_coords, ref2_coords, theta1, theta2):
-        theta1 = np.radians(theta1)
-        theta2 = np.radians(theta2)
-
-        w0 = (np.array(ref1_coords)+np.array(ref2_coords))/2
-        w0 = (np.array(ref1_coords) + np.array(ref2_coords)) / 2 + 0.1 * (np.array(prot_coords) - w0)
-
-        constraints = (
-            {'type': 'eq', 'fun': angle_constraint, 'args': (prot_coords, ref1_coords, theta1)},
-            {'type': 'eq', 'fun': angle_constraint, 'args': (prot_coords, ref2_coords, theta2)}
-        )
-
-        result = minimize(dist_norm, w0, args=(prot_coords,), constraints=constraints, method='trust-constr')
-
-        if result.success:
-            return result.x
-        else:
-            raise ValueError('Optimization failed')
 
     df = pd.read_csv(classification_file, delimiter=',')
 
     classification_dict = {}
     coord_dict = {}
+    watercoord_dict = {}
+
 
     for i, row in df.iterrows():
         if str(row['MSA_Resid']) not in classification_dict.keys():
             classification_dict[str(row['MSA_Resid'])] = []
             coord_dict[str(row['MSA_Resid'])] = []
+            watercoord_dict[str(row['MSA_Resid'])] = []
+
         classification_dict[str(row['MSA_Resid'])].append((float(row['Angle_1']), float(row['Angle_2'])))
         coord_dict[str(row['MSA_Resid'])].append(np.array([float(f) for f in row['Protein_Coords'].split()]))
+        watercoord_dict[str(row['MSA_Resid'])].append(np.array([float(f) for f in row['Water_Coords'].split()]))
 
 
     cluster_conservation_dict = {}
-
     for msa_resid, values in classification_dict.items():
         if str(msa_resid) not in cluster_conservation_dict.keys():
             cluster_conservation_dict[str(msa_resid)] = {}
@@ -464,54 +429,29 @@ def identify_clustered_angles(classification_file, ref1_coords, ref2_coords):
                 cluster_centers[label] = cluster_center
 
             centroid_coords = {}
+            centroid_water_coords = {}
+
             for label, center in cluster_centers.items():
                 min_distance=1000
                 for val_ind, val in enumerate(values):
-                    if np.linalg.norm([center, val]) < min_distance:
+                    if np.linalg.norm(center-val) < min_distance:
                         closest_coord = coord_dict[str(msa_resid)][val_ind]
+                        closest_water = watercoord_dict[str(msa_resid)][val_ind]
 
                 centroid_coords[label] = closest_coord
+                centroid_water_coords[label] = closest_water
 
             for label in cluster_labels:
                 if label != -1:
                     if label not in cluster_conservation_dict[str(msa_resid)].keys():
-                        cluster_conservation_dict[str(msa_resid)][str(label)] = {'counts': 0, 'center':cluster_centers[label], 'closest_coord': centroid_coords[label]}
+                        cluster_conservation_dict[str(msa_resid)][str(label)] = {'counts': 0, 'center':cluster_centers[label], 'closest_coord': centroid_coords[label], 'wat_coord':centroid_water_coords[label]}
 
-                        print(centroid_coords[label], ref1_coords, ref2_coords, *cluster_centers[label])
-                        wat_coords = find_wat_coords(centroid_coords[label], ref1_coords, ref2_coords, *cluster_centers[label])
-                        cluster_conservation_dict[str(msa_resid)][str(label)] = {'wat_coord': wat_coords}
+                        #print(centroid_coords[label], ref1_coords, ref2_coords, *cluster_centers[label])
+                        #wat_coords = find_wat_coords(centroid_coords[label], ref1_coords, ref2_coords, *cluster_centers[label])
+                        #cluster_conservation_dict[str(msa_resid)][str(label)] = {'wat_coord': wat_coords}
                     cluster_conservation_dict[str(msa_resid)][str(label)]['counts'] += 1
 
     return cluster_conservation_dict
-
-
-def plot_consevation_angles(cluster_conservation_dict, output_filebase='angle_clusters', output_dir='pymol_projections'):
-    with open(os.path.join(output_dir, f"{output_filebase}.pml")) as FILE:
-        for msa in cluster_conservation_dict.items():
-            for i, label in enumerate(cluster_conservation_dict[msa].keys()):
-                water_coord = cluster_conservation_dict[msa][label]['wat_coord']
-                prot_coord = cluster_conservation_dict[msa][label]['closest_coord']
-
-                strength = cluster_conservation_dict[msa][label]['wat_coord']
-
-
-                FILE.write(f"pseudoatom {msa}_{i}_protein, pos={prot_coord}\n")
-                FILE.write(f"pseudoatom {msa}_{i}_water, pos={water_coord}\n")
-                FILE.write(f"distance interaction_{msa}_{i}, {msa}_{i}_protein, {msa}_{i}_water\n")
-        
-        FILE.write("hide labels, all\n")
-        FILE.write('set dash_radius, 0.15, interaction*\n')    
-        FILE.write('set dash_gap, 0.0, interaction*\n')
-        FILE.write('hide labels, interaction*\n')
-        FILE.write('set sphere_scale, 0.2\n')
-        FILE.write('set sphere_color, oxygen, *_water')
-        FILE.write('bg white\n')
-        FILE.write('group AngleInteractions, interaction*\n')
-        FILE.write('group PseudoProteins, *_protein\n')
-        FILE.write('group PseudoWater, *_water\n')
-
-
-
 
 def find_clusters_from_densities(density_file, output_name=None, threshold=1.5):
     """

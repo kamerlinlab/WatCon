@@ -11,7 +11,7 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 import os
 
-#from modeller import *
+from modeller import *
 
 
 ##First function could be revised to use salign instead of multiple instances of malign
@@ -472,12 +472,3 @@ def convert_msa_to_individual(msa_indices, msa_indices_ref, resids, resid_sequen
     #desired_resid = int(resids[individual_index[0]]) 
 
     return desired_resid
-
-
-if __name__ == '__main__':
-    fasta = 'fasta/all_seqs.fa'
-    seq1, seq2 = parse_fasta(fasta) 
-    similarity = seq_similarity(seq1, seq2)
-    rotation_information = perform_structure_alignment('PTP_crystals_example/clean_pdbs')
-
-    align_with_waters('PTP_crystals_example/clean_pdbs', rotation_information['Rot'], rotation_information['Trans'], out_dir='PTP_crystals_example/aligned_with_waters')
