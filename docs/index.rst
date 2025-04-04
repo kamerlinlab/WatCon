@@ -75,6 +75,6 @@ WatCon further allows for analysis of conserved water positions and interactions
 
    getting_started
    user_guide
-   tutorial
+   tutorials
    api
    installation
