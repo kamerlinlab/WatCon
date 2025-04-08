@@ -9,7 +9,9 @@ Welcome to WatCon's documentation!
 WatCon is a Python package which can be used to comprehensively analyze water networks in both static structures and dynamic trajectories.
 WatCon further allows for analysis of conserved water positions and interactions across protein families and allows for conserved water netowrks to be shown easily via PyMOL projections.
 
-
+.. image:: images/toc.png
+   :width: 600
+   :align: center
 
 .. grid:: 1 1 2 2
 
@@ -17,6 +19,10 @@ WatCon further allows for analysis of conserved water positions and interactions
       :margin: 0 3 0 0
       
       Learn the basics of using WatCon.
+
+      .. image:: images/onewater.png
+         :width: 120
+         :align: center
 
       .. button-link:: ./getting_started.html
          :color: primary
@@ -32,6 +38,10 @@ WatCon further allows for analysis of conserved water positions and interactions
       
       An in-depth guide for users.
 
+      .. image:: images/twowater.png
+         :width: 120
+         :align: center
+         
       .. button-link:: ./user_guide.html
          :color: primary
          :outline:
@@ -46,6 +56,10 @@ WatCon further allows for analysis of conserved water positions and interactions
       
       How to use the API of WatCon.
 
+      .. image:: images/threewater.png
+         :width: 120
+         :align: center
+   
       .. button-link:: ./api.html
          :color: primary
          :outline:
@@ -55,17 +69,21 @@ WatCon further allows for analysis of conserved water positions and interactions
 
       
 
-    .. grid-item-card::  Installation Guide
+    .. grid-item-card::  Tutorials
       :margin: 0 3 0 0
       
-      Installation instructions for WatCon.
+      Example tutorials for WatCon.
 
-      .. button-link:: ./installation.html
+      .. image:: images/fourwater.png
+         :width: 120
+         :align: center
+
+      .. button-link:: ./tutorials.html
          :color: primary
          :outline:
          :expand:
 
-         To the Installation Guide
+         To the Tutorials
 
 
 .. toctree::

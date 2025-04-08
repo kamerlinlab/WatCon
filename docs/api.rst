@@ -1,6 +1,14 @@
 WatCon package
 ==============
 
+WatCon is organized in the following manner:
+
+.. image:: images/workflow.png
+   :width: 800
+
+Details on the contents of WatCon are outlined below.
+
+
 Subpackages
 -----------
 
