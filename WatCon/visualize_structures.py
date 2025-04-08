@@ -70,8 +70,6 @@ def project_clusters(coordinate_list, filename_base='CLUSTER',b_factors=None):
         List of coordinates representing cluster centers.
     filename_base : str
         Naming scheme to use for the outputted PDB file.
-    separate_files : bool, optional
-        Whether to create separate XYZ files for each cluster or a single combined PDB (default is True).
     b_factors : array-like, optional
         Optional list of values to replace the B-factor column.
 

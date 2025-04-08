@@ -11,7 +11,7 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 import os
 
-from modeller import *
+#from modeller import *
 
 
 ##First function could be revised to use salign instead of multiple instances of malign
@@ -193,16 +193,19 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', 
 
 
 class ChainAndNonProteinSelect(Select):
+    def __init__(self, chain_id='A'):
+        self.chain_id = chain_id
+
     def accept_chain(self, chain):
-        return chain.id == 'A'
+        return chain.id == self.chain_id
     
     def accept_residue(self, residue):
         # Accept residue if it belongs to chain A or if it's a non-protein residue
-        if residue.parent.id == 'A' or not is_aa(residue):
+        if residue.parent.id == self.chain_id or not is_aa(residue):
             return True
         return False
 
-def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='aligned_pdbs_with_water', selected_chain_only=True):
+def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='aligned_pdbs_with_water', selected_chain_only=True, selected_chain='A'):
     """
     Apply transformation matrices from structural alignment to translate water molecules.
 
@@ -214,6 +217,12 @@ def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='
         Rotation matrices obtained from `perform_structural_alignment`.
     translation_vectors : dict
         Translation vectors obtained from `perform_structural_alignment`.
+    out_dir : str
+        Output directory to save aligned PDBS
+    selected_chain_only : bool
+        Save structures with selected chain only
+    selected_chain: str, list
+        Chain of interest to save. Default is 'A' 
 
     Returns
     -------
@@ -259,7 +268,7 @@ def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='
         io = PDBIO()
         io.set_structure(structure)
         if selected_chain_only:
-            io.save(f"{out_dir}/{pdb.split('.')[0]}_aligned.pdb",ChainAndNonProteinSelect())
+            io.save(f"{out_dir}/{pdb.split('.')[0]}_aligned.pdb",ChainAndNonProteinSelect(chain_id=selected_chain))
         else:
             io.save(f"{out_dir}/{pdb.split('.')[0]}_aligned.pdb")
 

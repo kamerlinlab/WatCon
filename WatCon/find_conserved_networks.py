@@ -68,6 +68,7 @@ def get_coordinates_from_topology(pdb_file, atom_selection='all'):
     np.ndarray
         Array of coordinates
     """
+    import MDAnalysis as mda
 
     u = mda.Universe(pdb_file)
     ag = u.select_atoms(atom_selection)

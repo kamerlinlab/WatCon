@@ -12,3 +12,4 @@ We provide a series of common protocols which can require more specific informat
    faq/input_vs_python
    faq/organizing_files
    faq/common_errors
+   faq/frequently_asked_questions
