@@ -380,11 +380,19 @@ def identify_conserved_water_interactions_clustering(networks, clusters, max_con
     return interaction_dict
 
 
-def identify_clustered_angles(classification_file, ref1_coords, ref2_coords):
+def identify_clustered_angles(classification_file):
     """
-    NOTE: NOT TESTED YET
+    Cluster two-angle calculations and count frequencies of clusters. Finds the closest point to the center of the cluster.
 
-    MAKE IT SO THAT YOU CLUSTER FOR CRYSTAL STRUCTURES AND TAKE MINIMUM COORDINATES FOR MD
+    Parameters
+    ----------
+    classification_file : str
+        Path to angle classification file (.csv)
+
+    Returns
+    -------
+    cluster_conservation_dict : dict
+        Dictionary containing, for each residue, frequency of individual clusters and water/protein atom coords corresponding (as close as possible) to each cluster
     """
     from scipy.optimize import minimize
 

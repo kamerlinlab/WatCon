@@ -4,7 +4,7 @@ Frequently Asked Questions
 
 .. dropdown:: Do I need a modeller license to use WatCon?
 
-   Core WatCon functionality relies on the Modeller package. Although Modeller is not required for all WatCon analysis, the :mod:`WatCon.sequence_processing` module requires a working Modeller installation. Details on installing Modeller (and obtaining the license key can be found `here <https://salilab.org/modeller/>`_ . 
+   Core WatCon functionality relies on the Modeller package. Although Modeller is not required for all WatCon analysis, the :mod:`WatCon.sequence_processing` module requires a working Modeller installation. Details on installing Modeller (and obtaining the license key) can be found `here <https://salilab.org/modeller/>`_ . 
 
 .. dropdown:: How do I align my structures if I have multimers?
 

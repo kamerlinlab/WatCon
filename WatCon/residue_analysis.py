@@ -338,7 +338,7 @@ def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_di
         plt.close()
 
 
-def histogram_metrics(all_files, input_directory, concatenate):
+def histogram_metrics(all_files, input_directory, concatenate, output_dir='images'):
     """
     Plot histograms for calculated metrics
 
@@ -350,6 +350,8 @@ def histogram_metrics(all_files, input_directory, concatenate):
         Directory which contains .pkl files
     concatenate: list
         List of files to concatenate
+    output_dir: str, optional
+        Output directory. Default is 'images'
 
     Returns
     ---------
@@ -434,4 +436,152 @@ def histogram_metrics(all_files, input_directory, concatenate):
         ax.set_xlabel(plotting_names[i])
         ax.set_ylabel('Density')
 
-        fig.savefig(f"{metric}_comparehists.png", dpi=200, bbox_inches='tight')
+        fig.savefig(os.path.join(output_dir,f"{metric}_comparehists.png"), dpi=200, bbox_inches='tight')
+
+
+def plot_residue_interactions(topology_file, cutoff=0.0, watcon_directory='watcon_output', output_dir='images'):
+    """
+    Plot water-protein interactions by residue and color by average number of simultaneous interactions
+
+    Parameters
+    ----------
+    topology_file : str
+        Full path to an MDAnalysis-readable topology
+    cutoff : float, optional
+        Cutoff to show residue interactions. Default is 0.2.
+    watcon_directory : str, optional
+        Directory containing WatCon output files. Default is 'watcon_output'
+    output_dir : str, optional
+        Directory to save resulting image. Default is 'images'
+
+    Returns
+    -------
+    None
+    """
+
+    import pickle
+    from MDAnalysis.lib.util import convert_aa_code
+    import matplotlib.cm as cm
+    import matplotlib.colors as mcolors
+    from collections import Counter
+
+    #Initialize dictionary for interaction counts
+    interaction_counts = {}
+
+    #Track how many waters interact per residue
+    water_count_distribution = {}
+
+    #Store number of valid dictionaries analyzed
+    num_dicts = 0
+
+    for watcon_file in os.listdir(watcon_directory):
+        full_path = os.path.join(watcon_directory, watcon_file)
+        with open(full_path, 'rb') as FILE:
+            e = pickle.load(FILE)
+
+        #Increment num_dicts by the size of the calculated metrics dict
+        num_dicts += len(e[0])
+
+        for metrics_dict in e[0]:
+            #Isolate the per_residue_interaction dict
+            per_residue_interaction = metrics_dict['per_residue_interaction']
+
+            for res, count in per_residue_interaction.items():
+                if res not in interaction_counts:
+
+                    #Add interaction count to interaction dictionary
+                    interaction_counts[res] = count
+
+                    #If there is an interaction, add the number of simultaneous interactions to the water_count
+                    if count > 0:
+                        water_count_distribution[res] = [count]
+
+                else:
+                    #Increment interaction counts
+                    interaction_counts[res] += count
+
+                    #Add simultaneous waters
+                    if count > 0:
+                        water_count_distribution[res].append(count)
+
+    #Normalize interaction counts
+    if num_dicts > 0:
+        for res in interaction_counts:
+            #Normalize by total number of frames
+            interaction_counts[res] /= num_dicts
+
+    #Take average of simultaneous water interactions
+    mean_water_counts = {res: np.mean(water_list) for res, water_list in water_count_distribution.items()}
+
+    #Sort residues numerically and remove those under cutoff
+    sorted_residues = sorted([key for key in interaction_counts.keys() if interaction_counts[key] > cutoff], key=int)
+
+    #Take counts from sorted_residues
+    normalized_counts = [interaction_counts[res] for res in sorted_residues]
+
+    #Get residue names
+
+    #Initialize universe with given reference topology file
+    u = mda.Universe(topology_file)
+
+    #Initialize blank list of resnames (for labelling)
+    resnames = []
+    for val in sorted_residues:
+        residue = u.select_atoms(f"resid {val}")[0].resname
+        try:
+            one_letter = convert_aa_code(residue)
+        except:
+            #Try a series of known nonstandard residue names
+            if residue == 'CYM' or residue =='CSP':
+                one_letter = 'C'
+            elif residue.startswith('H'):
+                one_letter = 'H'
+            elif residue == 'ASH' or residue == 'AS4':
+                one_letter = 'D'
+            elif residue =='GLH' or residue == 'GL4':
+                one_letter = 'E'
+            elif residue == 'LYN':
+                one_letter = 'K'
+            elif residue == "ARN":
+                one_letter = 'R'
+            elif residue == 'SEP':
+                one_letter = 'S'
+            else: #Default to X
+                print(f"{residue} has no one-letter code, using X")
+                one_letter = 'X'
+        resnames.append(one_letter)
+
+    #Assign colors based on means of simultaneous waters
+    color_reference_values = np.array([mean_water_counts[res] for res in sorted_residues])
+    norm = mcolors.Normalize(vmin=min(color_reference_values), vmax=max(color_reference_values))
+    cmap = cm.PuBu
+    colors = cmap(norm(color_reference_values))
+
+    #Format residue labels
+    sorted_residues = np.array([str(resnames[i] + str(int(f) + 1)) for i, f in enumerate(sorted_residues)])
+
+    #Create bar plot
+    fig, ax = plt.subplots(figsize=(7.5,2))
+    fig.subplots_adjust(right=0.75, top=0.90, wspace=0.30)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    ax.bar(sorted_residues, normalized_counts, color=colors, edgecolor='k')
+    
+    #Add colorbar for bars
+    sm = cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, aspect=30, ax=ax, pad=0.010)
+    cbar.set_label("Average Simultaneous\nWaters",fontsize=10)
+
+    ax.set_ylabel('Interaction Score', fontsize=12)
+    plt.xticks(rotation=90)
+    fig.savefig(os.path.join(output_dir, 'Interaction_counts_bar.png', dpi=200, bbox_inches='tight'))
+
+    
+
+    
+
+
+

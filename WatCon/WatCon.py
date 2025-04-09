@@ -183,11 +183,12 @@ def run_watcon(structure_type, kwargs):
     results = initialize_network(**kwargs)
     return results
 
-def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', histogram_metrics=False, 
-                        calculate_densities=False, density_pdb=None, traj_directory=None, active_region_definition=None, 
+def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', histogram_metrics=False, residue_interactions=False, 
+                        reference_topology=None, interaction_cutoff=0.0, calculate_densities=False, density_pdb=None, 
+                        traj_directory=None, active_region_definition=None, image_output_dir='images',
                         custom_selection=None, water_name=None, cluster_concatenated=False, cluster_method='hdbscan', eps=0.0,
-                        n_jobs=1, min_samples=100, cluster_filebase='CLUSTER', calculate_commonality='bar', color_by_conservation=None, 
-                        classify_waters=True, csv_dir='msa_classification'):
+                        n_jobs=1, min_samples=100, cluster_filebase='CLUSTER', calculate_commonality=None, color_by_conservation=None, 
+                        classify_waters=False, csv_dir='msa_classification'):
     """
     Run WatCon analysis from input file
 
@@ -198,7 +199,11 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
     input_directory : str
         Directory which contains input files. Default is 'watcon_output'
     histogram_metrics : bool
-        Indicate whether to histogram calculated metrics. Default is True.
+        Indicate whether to histogram calculated metrics. Default is False.
+    residue_interactiosn: bool
+        Indicate whether to plot bar graphs of water-protein interactions at the residue level. Default is False.
+    reference_topology : str
+        Full path to reference topology to be used for residue interaction analysis
     calculate_densities : bool
         Calculate densities for combined simulation data. Default is False.
     density_pdb : str
@@ -207,6 +212,8 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
         Directory containing trajectories to be used when calculating densities. Default is None.
     active_region_definition : str
         MDAnalysis selection language to define active site when calculating densities. Default is None.
+    image_output_dir : str
+        Output directory for images. Default is 'images'
     custom_selection : str
         MDAnalysis selection language for classifying custom residues as 'protein'. Default is None.
     water_name : str
@@ -229,7 +236,7 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
     color_by_conservation : {'all', 'centers', 'connections', None}
         Color cluster centers by conservation, connections among cluster centers, or neither
     classify_waters : bool
-        Indicate whether to plot distributions of 2-angle calculatiosn
+        Indicate whether to plot distributions of 2-angle calculations. Default is False.
     csv_dir: str
         Directory containing csvs (for classify_waters)
 
@@ -255,7 +262,13 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
 
     #Histogram metircs
     if histogram_metrics:
-        residue_analysis.histogram_metrics(all_files, input_directory, concatenate)
+        residue_analysis.histogram_metrics(all_files, input_directory, concatenate, image_output_dir)
+
+    if residue_interactions:
+        if reference_topology is not None:
+            residue_analysis.plot_residue_interactions(reference_topology, interaction_cutoff, watcon_directory=input_directory, output_dir=image_output_dir)
+        else:
+            print('Please provide a reference topology for residue interaction analysis')
 
     #Calculate densities and save centers as pdb atoms
     if calculate_densities:

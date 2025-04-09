@@ -93,8 +93,6 @@ An example of a WatCon input file is provided below.
    msa_indexing: on                                 ; Utilize/perform an MSA
    alignment_file: alignment.txt                    ; Name of alignment file (if file does not exist, 
                                                     ;     Modeller will be used to write this file)
-   make_fastas: off                                 ; If 'on', WatCon will make fasta files 
-                                                    ;     from the pdbs in structure_directory
    combined_fasta: all_fastas.fa                    ; Name of combined fasta file
    fasta_directory: fasta                           ; Directory containing individual fasta files
    MSA_reference_pdb: WT_PTP1B_Unlig_Open.gro         ; Any pdb which can be used as a reference

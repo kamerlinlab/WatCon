@@ -100,6 +100,22 @@ def project_clusters(coordinate_list, filename_base='CLUSTER',b_factors=None):
 
 
 def plot_consevation_angles(cluster_conservation_dict, output_filebase='angle_clusters', output_dir='pymol_projections'):
+    """
+    Visualize two-angle water-protein conservation
+
+    Parameters
+    ----------
+    cluster_conservation_dict : dict
+        Dictionary obtained from WatCon.find_conserved_networks.identify_clustered_angles()
+    output_filebase : str, optional
+        Filename base (no extension) for outputted .pml file. Default is 'angle_clusters'
+    output_dir : str, optional
+        Name of output directory. Default is 'pymol_projections'
+
+    Returns
+    -------
+    None
+    """
     os.makedirs(output_dir, exist_ok=True)
 
     strengths = []
