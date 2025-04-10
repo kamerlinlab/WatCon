@@ -1,0 +1,35 @@
+name: WatCon
+channels:
+
+  - conda-forge
+  - defaults
+  - salilab
+dependencies:
+    # Base depends
+  - python
+  - pip
+  
+  - pydata-sphinx-theme
+  - sphinx-design
+  - sphinx-copybutton
+  - sphinx_rtd_theme         
+  - sphinxcontrib-applehelp  
+  - sphinxcontrib-devhelp    
+  - sphinxcontrib-htmlhelp   
+  - sphinxcontrib-jquery     
+  - sphinxcontrib-jsmath     
+  - sphinxcontrib-qthelp     
+  - sphinxcontrib-serializinghtml
+  - numpy
+  - pandas
+  - networkx
+  - scikit-learn
+  - mdanalysis
+  - scipy 
+  - biopython
+  - modeller
+
+    # Pip-only installs
+  - pip:
+    - -e ../
+
