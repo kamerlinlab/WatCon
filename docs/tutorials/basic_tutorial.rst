@@ -160,7 +160,7 @@ Into the PyMOL console.
    $ @/path/to/pml_files/15.pml
 
 
-Run WatCon post-analysis
+Run WatCon Post-Analysis
 ------------------------
 
 Once WatCon has been run initially, a separate input file can be utilized for separate post analysis. An example analysis input file is provided in the :doc:`Getting Started <../getting_started>` section. Post-analysis will produce (depending on specifications) a series of plots along with PDB and .pml files containing conservation information. Tips on calculating and visualizing conservation scores are outlined more directly in the :doc:`User Guide <../faq/calculations>` section. WatCon can then be called on the command line:

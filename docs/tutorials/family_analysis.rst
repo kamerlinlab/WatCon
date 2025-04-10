@@ -52,7 +52,7 @@ You have the option of creating a histogram of conservation scores or a bar plot
    pdbs = ['2F71_PTPN1_closed_aligned.pdb', '1AAX_aligned.pdb'] #One PDB from current dataset and the other from the previous PTP1B closed dataset.
 
    #Get alignment information to move coordinates of clusters
-   rotation_information = sequence_processing.perform_structural_alignment(pdbs, out_dir='aligned_pdbs', sort_pdbs=False)
+   rotation_information = sequence_processing.perform_structure_alignment(pdbs, out_dir='aligned_pdbs', sort_pdbs=False)
 
    #Transform cluster coordinates
    transformed_centers = np.dot(cluster_coordinates, rotation_information['Rot'][0].T) + rotation_information['Trans'][0]
@@ -155,3 +155,4 @@ This will write a new PDB of the same cluster centers as before (although now al
 
 Here, conservation is colored as a spectrum from blue-to-red, with red being more conserved and blue being less conserved. We can see that there are fleeting water positions around the WPD-loop (blue) which are not highly conserved. This makes sense as our static structures contain a variety of different WPD-loop conformations, and so the neighboring waters will likely be in very different positions across structures. However, the N-terminal portion of the WPD-loop contains highly conserved water positions, which do not interact directly with waters deeper into the active site. Furthermore, there are clusters of water molecules closer to the P-loop (orange) which are not highly conserved across structures. This is likely due to the fact that many closed crystal structures contain ligands or bound ions, preventing water molecules within these regions.
 
+.. note:: Make sure to load the outputted .pml file after loading in the cluster PDB, but **before** loading in any other structure files.

@@ -52,7 +52,7 @@ After WatCon analysis, the resulting directory structure will look like this:
     input_file.txt
 
 
-Naming schemes
+Naming Schemes
 ~~~~~~~~~~~~~~
 
 WatCon assumes a consistent naming scheme between structures, trajectories, and fasta files. 

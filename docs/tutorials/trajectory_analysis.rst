@@ -7,13 +7,13 @@ Trajectory Analysis
 We present how WatCon can be used in order to analyze water network structure and important water-protein interactions across a molecular dynamics trajectory. This example taken from (XXX) analyzes the protein tyrosine phosphatase (PTP) PTP1B. This protein notably contains a mobile active site loop, the WPD-loop, identified by the general acid D181. The movement of this loop plays a major role in the catalytic regulation of this enzyme and importantly the movement of this loop fundamentally changes the solvation of the active site. We will use WatCon to investigate the effects of this loop movement.
 
 
-1. Prepare structures and trajectories
+1. Prepare Structures and Trajectories
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We conducted 8 x 1.5μs trajectories of PTP1B initiated from the WPD-loop closed and WPD-loop open conformations. See (XXX) for more details on simulation setup. We processed our trajectories prior to this analysis, fixing periodic boundary condition (PBC) and aligning the protein within the box. Our structures contain the same atom-numbering regardless of configuration, and so we do not need to perform a multiple sequence alignment to ensure consistent residue numbering. Furthermore, since we have preprocessed our trajectories, we do not need to align structures, and so we can leave our topology in any MDAnalysis-readable format and skip further steps involving the :mod:`WatCon.sequence_processing` module.
 
 
-2. Create input files
+2. Create Input Files
 ^^^^^^^^^^^^^^^^^^^^^
 
 In our case, we have 8 separate replicas for each configuration that we are sampling to analyze. We could concatenate all trajectories (making sure to keep all frames aligned) prior to WatCon analysis, or we can run WatCon separately for each trajectory and combine results later. We demonstrate using this method, as it can be preferable due to increased parallelization across trajectories. We can use either input files or the python API directly to do this, but we recommend for large trajectories using input files as the WatCon data will be saved in .pkl files which can be reloaded later for faster analysis. Here is a sample input files for our analysis.

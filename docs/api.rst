@@ -1,4 +1,4 @@
-WatCon package
+WatCon Package
 ==============
 
 WatCon is organized in the following manner:

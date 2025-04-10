@@ -122,7 +122,7 @@ WatCon can then be executed by the command
 Which will output any PDB files and PyMOL files as specified by the user. Results will be outputted in a .pkl file which can then be loaded and analyzed further.
 
 
-Analyzing calculated metrics
+Analyzing Calculated Metrics
 ----------------------------
 
 To increase ease in combining results across multiple trajectories or multiple static structures, we also allow for supplemental analysis to be conducted via direct python interface or input files following this construction:
