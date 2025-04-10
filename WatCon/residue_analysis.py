@@ -410,7 +410,7 @@ def histogram_metrics(all_files, input_directory, concatenate, output_dir='image
 
     #Begin plotting
     for i, metric in enumerate(metrics_plot):
-        fig, ax = plt.subplots(1,figsize=(3,2))
+        fig, ax = plt.subplots(1,figsize=(3,2), tight_layout=True)
         fig.subplots_adjust(left=0, right=0.85)
         metric_cur_concatenate = np.array(metric_dict[metric])
 

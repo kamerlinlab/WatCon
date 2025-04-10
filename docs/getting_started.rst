@@ -140,7 +140,9 @@ To increase ease in combining results across multiple trajectories or multiple s
     
     ; Basic metric analysis
     histogram_metrics: on                          ; Will make basic matplotlib histograms of metrics according to desired concatenation                
-    
+    residue_interactions: on                       ; Will make bar graphs of per-residue water interaction frequency
+    reference_topology: WT_PTP1B_Closed.gro        ; Reference topology for residue_interaction analysis
+    interaction_cutoff: 0.0                        ; Cutoff of interaction score for writing residue_interaction bar graph    
     
     ; Density analysis
     calculate_densities: on                        ; Use MDAnalysis density to output density of waters (ONLY FOR DYNAMIC_NETWORKS)    
@@ -176,6 +178,10 @@ Numerous modules will output files to visualize water networks or clustered wate
 
 * Cluster centers (.pdb): Cluster centers will often be saved as PDB files with dummy water oxygen atoms. These can safely be loaded in PyMOL similar to any other PDB file
 * Snapshot water networks (.pml): PyMOL (.pml) files containing information regarding connections among waters are often written, and can easily be loaded in PyMOL by first loading the corresponding structure file and then typing :code:`@FILE.pml` in the PyMOL command line
+
+  .. image:: images/open_projection.png
+     :width: 400
+     :align: center
 
   .. note:: When loading .pml files for trajectory frames, we recommend only loading in the trajectory frame of interest into PyMOL first, and then follow by loading the .pml. This will reduce unecessary wait time when loading the connections.
 

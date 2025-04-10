@@ -308,7 +308,7 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
             print(f"Clustered PDB does not exist. Cannot calculate commonality")
             raise ValueError
 
-        plot_commonality(all_files, input_directory, f"cluster_pdbs{cluster_filebase}.pdb" , plot_type=calculate_commonality)
+        plot_commonality(all_files, input_directory, f"cluster_pdbs{cluster_filebase}.pdb" , commonality_dict=None, plot_type=calculate_commonality)
 
     if color_by_conservation is not None:
         from WatCon.find_conserved_networks import identify_conserved_water_clusters, identify_conserved_water_interactions_clustering, get_coordinates_from_topology

@@ -238,6 +238,14 @@ Now, let's look how our active region residues differentially interact with wate
    residue_interactions : on       ; Create bar graphs of residue water interaction scores
    interaction_cutoff : 0.1        ; Cutoff for showing bars of interacting residues
 
+Or this can be accomplished by using the python API directly:
+
+.. code-block:: python 
+
+   from WatCon import residue_analysis
+
+   residue_analysis.plot_residue_interactions('path/to/topology/file', cutoff=0.1, watcon_directory='watcon_output', output_dir='images')
+
 If we present the resulting bar plot with a projection of the high-scoring residues, we can obtain an image like this.
 
 .. image:: ../images/Interaction_bar_with_projections.png

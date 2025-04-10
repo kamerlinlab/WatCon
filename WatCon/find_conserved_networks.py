@@ -76,6 +76,33 @@ def get_coordinates_from_topology(pdb_file, atom_selection='all'):
     coords = ag.positions
     return np.array(coords).reshape(-1,3)
 
+def get_coordinates_from_pdb(pdb_file):
+    """
+    Returns coordinates for all "ATOM" or "HETATM" lines -- useful for getting coordinates from cluster PDBS.
+
+    Parameters
+    ----------
+    pdb_file : str
+        Full path to PDB file.
+    
+    Return
+    ------
+    np.ndarray
+        Array of coordinates
+    """
+    with open(pdb_file, 'r') as FILE:
+        lines = FILE.readlines()
+
+    centers = np.zeros((len(lines), 3))
+    for i, line in enumerate(lines):
+        if line.startswith("ATOM") or line.startswith("HETATM"):
+            x = float(line[30:38].strip())
+            y = float(line[38:46].strip())
+            z = float(line[46:54].strip())
+            centers[i,:] = x,y,z
+
+    return centers
+
 def cluster_nodes(combined_graph, cluster='hdbscan', min_samples=10):
     """
     Cluster node positions from a combined NetworkX graph.
@@ -505,7 +532,7 @@ def find_clusters_from_densities(density_file, output_name=None, threshold=1.5):
     return(hotspot_coords)
 
     
-def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', output='commonality'):
+def plot_commonality(files=None, input_directory=None, cluster_pdb=None, commonality_dict=None, plot_type='bar', output='commonality'):
     """
     Plot commonality to cluster centers.
 
@@ -517,6 +544,8 @@ def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', outpu
         Directory containing files
     cluster_pdb : str
         PDB of clusters
+    commonality_dict : dict
+        Commonality dict 
     plot_type : {'bar', 'hist'}
         Type of plot
     output : str
@@ -528,42 +557,42 @@ def plot_commonality(files, input_directory, cluster_pdb, plot_type='bar', outpu
     """
     import matplotlib.pyplot as plt
 
-    name_list = []
-    network_list = []
-
     names = True
-    #Check if files have names (from crystal structures) or do not
-    with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
-        e = pickle.load(FILE)
-        if len(e) < 4:
-            names = False
+    if commonality_dict is None:
+        name_list = []
+        network_list = []
+        #Check if files have names (from crystal structures) or do not
+        with open(os.path.join(input_directory,files[0]), 'rb') as FILE:
+            e = pickle.load(FILE)
+            if len(e) < 4:
+                names = False
+            
+        if names:
+            for i, file in enumerate(files):
+                with open(os.path.join(input_directory,file), 'rb') as FILE:
+                    e = pickle.load(FILE)
+                name_list.extend(e[3])
+                network_list.extend(e[1])
+        else:
+            for i, file in enumerate(files):
+                with open(os.path.join(input_directory,file), 'rb') as FILE:
+                    e = pickle.load(FILE)
+
+                name_list.extend([f"{i}-{j}" for j, _ in enumerate(e)])
+                network_list.extend(e[1])
+
+        with open(cluster_pdb, 'r') as FILE:
+            lines = FILE.readlines()
+
+        centers = np.zeros((len(lines), 3))
+        for i, line in enumerate(lines):
+            if line.startswith("ATOM") or line.startswith("HETATM"):
+                x = float(line[30:38].strip())
+                y = float(line[38:46].strip())
+                z = float(line[46:54].strip())
+                centers[i,:] = x,y,z
         
-    if names:
-        for i, file in enumerate(files):
-            with open(os.path.join(input_directory,file), 'rb') as FILE:
-                e = pickle.load(FILE)
-            name_list.extend(e[3])
-            network_list.extend(e[1])
-    else:
-        for i, file in enumerate(files):
-            with open(os.path.join(input_directory,file), 'rb') as FILE:
-                e = pickle.load(FILE)
-
-            name_list.extend([f"{i}-{j}" for j, _ in enumerate(e)])
-            network_list.extend(e[1])
-
-    with open(cluster_pdb, 'r') as FILE:
-        lines = FILE.readlines()
-
-    centers = np.zeros((len(lines), 3))
-    for i, line in enumerate(lines):
-        if line.startswith("ATOM") or line.startswith("HETATM"):
-            x = float(line[30:38].strip())
-            y = float(line[38:46].strip())
-            z = float(line[46:54].strip())
-            centers[i,:] = x,y,z
-    
-    commonality_dict = find_commonality(network_list, centers, name_list)
+        commonality_dict = find_commonality(network_list, centers, name_list)
 
     if plot_type == 'bar':
         fig, ax = plt.subplots(1, figsize=(5,3), tight_layout=True)

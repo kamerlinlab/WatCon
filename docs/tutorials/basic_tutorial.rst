@@ -110,7 +110,7 @@ Depending on which analyses you chose to conduct, WatCon will make a series of d
 
    network_metrics, networks, cluster_centers, pdb_names = data
 
-We provide several built-in post-analysis features which can be immplemented without the user directly accessing these files. More details are provided in the next section.
+We provide several built-in post-analysis features which can be implemented without the user directly accessing these files. More details are provided in the next section.
 
 * **cluster_pdbs**: WatCon can be used to cluster water positions across multiple structures. If doing so, the positions of these clustered positions will be saved in PDB format and can be visualized using your favorite molecular visualization software. We recommend to visualize the cluster centers simultaneously to a protein structure to more easily see the relative locations of the cluster centers. Since the cluster centers were calculated with respect to the inputted aligned PDBs, the cluster centers can be loaded alongside any topology file from this collection without fear of misalignment.
 
@@ -146,8 +146,12 @@ Where the column names are:
 
 Into the PyMOL console.
 
-.. note:: 
-   If using trajectories, be sure to load the trajectory frames into the structure **before** loading in the connection information. In order to increase speed in loading, we recommend using the 'start' and 'stop' arguments in PyMOL's **load_traj** function to ensure that only relevant frames are loaded into the structure. For example:
+.. note::
+
+   .. role:: python (code)
+      :language: python 
+ 
+   If using trajectories, be sure to load the trajectory frames into the structure **before** loading in the connection information. In order to increase speed in loading, we recommend using the 'start' and 'stop' arguments in PyMOL's :python:`load_traj` function to ensure that only relevant frames are loaded into the structure. For example:
 
 .. code-block:: console
 
@@ -159,8 +163,11 @@ Into the PyMOL console.
 Run WatCon post-analysis
 ------------------------
 
-Once WatCon has been run initially, a separate input file can be utilized for separate post analysis. An example analysis input file is provided in the :doc:`Getting Started <../getting_started>` section. Post-analysis will produce (depending on specifications) a series of plots along with PDB and .pml files containing conservation information. Tips on calculating and visualizing conservation scores are outlined more directly in the :doc:`User Guide <../faq/calculations>` section. 
+Once WatCon has been run initially, a separate input file can be utilized for separate post analysis. An example analysis input file is provided in the :doc:`Getting Started <../getting_started>` section. Post-analysis will produce (depending on specifications) a series of plots along with PDB and .pml files containing conservation information. Tips on calculating and visualizing conservation scores are outlined more directly in the :doc:`User Guide <../faq/calculations>` section. WatCon can then be called on the command line:
 
+.. code-block:: console
+
+   $ python -m WatCon.WatCon --analysis analysis_input.txt
 
 We hope that this tutorial provides a sufficient guide to introduce the basics of a WatCon analysis. For more specific examples and directed guides, we recommend the user to study the remaining tutorials. Specific advice for effective WatCon usage is also outlined in the :doc:`User Guide <../user_guide>` section. 
 

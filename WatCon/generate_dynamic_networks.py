@@ -1223,7 +1223,7 @@ def get_clusters(coordinates, cluster, min_samples=10, eps=0.0, n_jobs=1, filena
 
     return cluster_labels, cluster_centers
 
-def collect_densities(topology_file, trajectory_file, active_region_definition, custom_selection, 
+def collect_densities(topology_file, trajectory_file, active_region_definition, active_region_COM, custom_selection, 
                       water_name, water_oxygen, output_name):
     """
     Calculate density of water positions, output density file, calculate hotspots from densities, and output PDB file corresponding to cluster hotspots.
@@ -1236,6 +1236,8 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
         Full path to MDAnalysis-readable trajectory file
     active_region_definition : str
         MDAnalysis selection language to define active site
+    active_region_COM : bool
+        Indicate whether to use center of mass for active site definition
     custom_selection : str
         MDAnalysis selection language to include custom residues in protein definition
     water_name : str
@@ -1258,11 +1260,22 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
     if not isinstance(trajectory_file, list):
         trajectory_file = [trajectory_file]
     u = mda.Universe(topology_file, *trajectory_file)
-    align.AlignTraj(u, ref, select='name CA', in_memory=True).run()
+    align.AlignTraj(u, ref, select='name CA', filename='tmp.dcd', in_memory=False).run()
+
+    u = mda.Universe(topology_file, 'tmp.dcd')
     ag = u.select_atoms(f'protein or {custom_selection}')
     ag.write(f'{output_name}.pdb')
 
-    ow = u.select_atoms(f"({water_name} and name {water_oxygen}) and {active_region_definition}", updating=True)
+    if active_region_COM:
+        reference = u.select_atoms('resid 220 or resid 214').center_of_mass()
+        x, y, z = reference  # Unpack coordinates
+        print(x,y,z)
+        # Properly format the selection string
+        ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and point {x} {y} {z} 9", updating=True)
+    
+    else:
+        ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and {active_region_definition}", updating=True)
+
     D = density.DensityAnalysis(ow, delta=1.0)
     D.run()
     D.results.density.convert_density('TIP3P')
