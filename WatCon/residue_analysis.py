@@ -205,7 +205,7 @@ def classify_waters(network, ref1_coords, ref2_coords):
     return classification_dict
     
 
-def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_dir='MSA_images'):
+def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_dir='MSA_images', name1='DYNAMIC', name2='STATIC'):
     """
     Plot water classifications from 2-angle analysis
 
@@ -283,7 +283,7 @@ def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_di
     names = list(scatters.keys())
     print(names)
 
-    colors = {'DYNAMIC': 'gray', 'STATIC': {'backbone': 'dodgerblue', 'sidechain': 'mediumorchid'}}  # Adjust colors
+    colors = {name1: 'gray', name2: {'backbone': 'dodgerblue', 'sidechain': 'mediumorchid'}}  # Adjust colors
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate and save a separate plot for each MSA
@@ -295,7 +295,7 @@ def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_di
         
         for name, data in scatters.items():
             if MSA in data:
-                if name.startswith('DYNAMIC'):  # Combine all MD_* data
+                if name.startswith(name1):  # Combine all MD_* data
                     x_vals, y_vals = zip(*data[MSA])  # Extract coordinates
                     md_x.extend(map(float, x_vals))
                     md_y.extend(map(float, y_vals))
@@ -310,11 +310,11 @@ def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_di
 
         # Plot STATIC data as scatter plots
         for name, data in scatters.items():
-            if MSA in data and name == 'STATIC':
+            if MSA in data and name == name2:
                 for i, coords in enumerate(data[MSA]):
                     x, y = map(float, coords)
                     classification = classifications[name][MSA][i]
-                    color = colors['STATIC']['backbone'] if 'backbone' in classification else colors['STATIC']['sidechain']
+                    color = colors[name2]['backbone'] if 'backbone' in classification else colors[name2]['sidechain']
                     name_new = pdb_names[name][MSA][i]
                     if 'open' in name_new or 'Open' in name_new:
                         facecolor='none'

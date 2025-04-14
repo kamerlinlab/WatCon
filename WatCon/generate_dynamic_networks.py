@@ -1518,7 +1518,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             Dictionary of cluster centers (if clustering is on)
 
     """
-    def process_frame(frame_idx, coords=None, ref_coords=None, residues=None):
+    def process_frame(frame_idx, coords=None, ref_coords=None, residues=None, references=None):
         """
         Internal function to make parallelizing each frame easier
 
@@ -1672,6 +1672,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
     
     #Get pdb and traj file
+    pdb_dir = structure_directory
     pdb_file = os.path.join(structure_directory, topology_file)
     traj_file = os.path.join(structure_directory, trajectory_file)
 
@@ -1710,6 +1711,21 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
     #Initialize ref_coords if classifying water
     ref_coords = [None]
+    if active_region_reference is not None:
+        if MSA_reference_pdb is not None:
+            u = mda.Universe(os.path.join(pdb_dir, MSA_reference_pdb))
+            reference_resids = u.residues.resids.tolist()
+            try:
+                fasta_individual = [f for f in os.listdir(fasta_directory) if (MSA_reference_pdb.split('_')[0] in f and 'fa' in f)][0] #THIS IS NOT GENERALIZED
+            except:
+                print(f'Could not find an equivalent fasta file for {MSA_reference_pdb}')
+
+            #Generate MSA alignment if file does not exist and output MSA indices corresponding to partcicular sequence
+            msa_indices_reference = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
+            references = [reference_resids, msa_indices_reference]
+        else:
+            references=None
+
     if classify_water:
         #Find ref_coords if particular residue is indicated
         if water_reference_resids is not None:
@@ -1728,7 +1744,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
 
 
     #Parallelized so there is one worker allocated for each frame
-    results = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, coords, ref_coords, residues) for frame_idx in range(frames))
+    results = Parallel(n_jobs=num_workers)(delayed(process_frame)(frame_idx, coords, ref_coords, residues, references) for frame_idx in range(frames))
     network_metrics, networks = zip(*results)
     #Cluster coordinates after networks are created returns metrics and centers
     if cluster_coordinates:

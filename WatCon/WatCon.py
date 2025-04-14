@@ -251,8 +251,6 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
     cluster_concatenated is NOT recommended for collections of large trajectories, calculate_densities is recommended instead
 
     If f"{cluster_filebase}.pdb" already exists and cluster_concatenated == False, then the current clustering pdb will be used for analysis
-
-    NEED TO ADD THE COORDINATE TRANSFORMATIONS, THEY ARE REQUIRED FOR THIS TO WORK UNIVERSALLY!!
     """
 
     import WatCon.residue_analysis as residue_analysis

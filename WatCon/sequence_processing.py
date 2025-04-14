@@ -347,7 +347,8 @@ def pdb_to_fastas(pdb_file, fasta_out, name='STATE', custom_residues=None):
 
     for line in pdb_lines:
         if ('ATOM' in line) and ('CA' in line):
-            aa = line.split()[3]
+            #aa = line.split()[3]
+            aa = line[17:20]
             sequence.append(amino_acid_dict[aa])
 
 

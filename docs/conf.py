@@ -23,7 +23,7 @@ import WatCon
 # -- Project information -----------------------------------------------------
 
 project = 'WatCon'
-copyright = ("2025, Alfie-Louise Brownless. Project structure based on the "
+copyright = ("2025, Alfie-Louise Brownless & Shina Caroline Lynn Kamerlin. Project structure based on the "
              "Computational Molecular Science Python Cookiecutter version 1.10")
 author = 'Alfie-Louise Brownless'
 
