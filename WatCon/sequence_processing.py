@@ -1,5 +1,5 @@
 '''
-Functions in this file will serve the purpose to perform alignments so that conserved networks can be generated
+Pre-process PDB files and provide helpful alignment functions.
 
 '''
 
@@ -12,104 +12,6 @@ from Bio.Seq import Seq
 import os
 
 #from modeller import *
-
-
-##First function could be revised to use salign instead of multiple instances of malign
-
-'''
-def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
-    """
-    Perform structural alignment using modeller
-
-    Parameters
-    ----------
-    pdb_dir : str
-        Directory of pdb files
-    same_chain : str or list
-        Indication of which chains to align (If a list, needs to be in the same order as the sorted PDB directory)
-    out_dir : str
-        Output directory
-
-    Returns
-    -------
-    None
-    """
-    env = Environ()
-    aln = Alignment(env)
-    pdbs = os.listdir(pdb_dir) 
-
-    if sort_pdbs==True:
-        pdbs.sort()  
-
-    if type(same_chain) != list:  #provide ability for a list of chains to be given, but not required, by default will take chain A from everything
-        same_chain = [same_chain]*len(pdbs)
-
- 
-    for (pdb, chain) in zip(pdbs, same_chain):
-        print(pdb, chain)
-        pdb_file = os.path.join(pdb_dir, pdb)
-        m = Model(env, file=pdb_file, model_segment=('FIRST:'+chain, 'LAST:'+chain))
-        aln.append_model(m, atom_files=os.path.join(pdb_dir, pdb), align_codes=pdb)
-
-    aln.malign()
-    aln.salign()
-    aln.compare_structures()
-    
-    mdl = model(env)
-    mdl.read(file=aln[pdbs[0]].atom_file, model_segment=aln[pdbs[0]].range)
-    mdl.color(aln=aln)
-    mdl.write(file=f"{out_dir}/{pdbs[0].split('.pdb')[0]}.aln.pdb")
-
-    
-    for pdb in pdbs[1:]:
-        mdl2 = model(env)
-        mdl2.read(file=aln[pdb].atom_file, model_segment=aln[pdb].range)
-        sel = selection(mdl).only_atom_types('CA')
-        sel.superpose(mdl2, aln)
-        mdl2.write(file=f"{out_dir}/{pdb.split('.pdb')[0]}.aln.pdb")
-
-def msa_with_modeller(alignment_file, combined_fasta):
-    """
-    Perform Multiple Sequence Alignment (MSA) using Modeller.
-
-    Note
-    ----
-    If the proteins are not closely related, it may be better to use a more sophisticated alignment method.
-
-    Parameters
-    ----------
-    alignment_file : str
-        Name of the file to write the alignment results to.
-    combined_fasta : str
-        Path to a FASTA file containing sequences of all proteins.
-
-    Returns
-    -------
-    None
-    """
-
-    log.verbose()
-
-    #Initialize environment
-    env = environ()
-    env.io.atom_files_directory='./'
-    
-    #Perform alignment, using default modeller parameters
-    aln = alignment(env, file=combined_fasta, alignment_format='FASTA')
-    aln.salign(rr_file='$(LIB)/as1.sim.mat',  # Substitution matrix used
-            output='',
-            max_gap_length=20,
-            gap_function=False,              # If False then align2d not done
-                feature_weights=(1., 0., 0., 0., 0., 0.),
-            gap_penalties_1d=(-100, 0),
-            output_weights_file='saligni1d.mtx',
-            similarity_flag=True)   # Ensuring that the dynamic programming
-                                    # matrix is not scaled to a
-                                    # difference matrix
-
-    #Write final alignment
-    aln.write(file=alignment_file, alignment_format='PIR')
-'''
 
 def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
     """
@@ -482,3 +384,103 @@ def convert_msa_to_individual(msa_indices, msa_indices_ref, resids, resid_sequen
     #desired_resid = int(resids[individual_index[0]]) 
 
     return desired_resid
+
+
+
+
+'''
+def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
+    """
+    Perform structural alignment using modeller
+
+    Parameters
+    ----------
+    pdb_dir : str
+        Directory of pdb files
+    same_chain : str or list
+        Indication of which chains to align (If a list, needs to be in the same order as the sorted PDB directory)
+    out_dir : str
+        Output directory
+
+    Returns
+    -------
+    None
+    """
+    env = Environ()
+    aln = Alignment(env)
+    pdbs = os.listdir(pdb_dir) 
+
+    if sort_pdbs==True:
+        pdbs.sort()  
+
+    if type(same_chain) != list:  #provide ability for a list of chains to be given, but not required, by default will take chain A from everything
+        same_chain = [same_chain]*len(pdbs)
+
+ 
+    for (pdb, chain) in zip(pdbs, same_chain):
+        print(pdb, chain)
+        pdb_file = os.path.join(pdb_dir, pdb)
+        m = Model(env, file=pdb_file, model_segment=('FIRST:'+chain, 'LAST:'+chain))
+        aln.append_model(m, atom_files=os.path.join(pdb_dir, pdb), align_codes=pdb)
+
+    aln.malign()
+    aln.salign()
+    aln.compare_structures()
+    
+    mdl = model(env)
+    mdl.read(file=aln[pdbs[0]].atom_file, model_segment=aln[pdbs[0]].range)
+    mdl.color(aln=aln)
+    mdl.write(file=f"{out_dir}/{pdbs[0].split('.pdb')[0]}.aln.pdb")
+
+    
+    for pdb in pdbs[1:]:
+        mdl2 = model(env)
+        mdl2.read(file=aln[pdb].atom_file, model_segment=aln[pdb].range)
+        sel = selection(mdl).only_atom_types('CA')
+        sel.superpose(mdl2, aln)
+        mdl2.write(file=f"{out_dir}/{pdb.split('.pdb')[0]}.aln.pdb")
+
+def msa_with_modeller(alignment_file, combined_fasta):
+    """
+    Perform Multiple Sequence Alignment (MSA) using Modeller.
+
+    Note
+    ----
+    If the proteins are not closely related, it may be better to use a more sophisticated alignment method.
+
+    Parameters
+    ----------
+    alignment_file : str
+        Name of the file to write the alignment results to.
+    combined_fasta : str
+        Path to a FASTA file containing sequences of all proteins.
+
+    Returns
+    -------
+    None
+    """
+
+    log.verbose()
+
+    #Initialize environment
+    env = environ()
+    env.io.atom_files_directory='./'
+    
+    #Perform alignment, using default modeller parameters
+    aln = alignment(env, file=combined_fasta, alignment_format='FASTA')
+    aln.salign(rr_file='$(LIB)/as1.sim.mat',  # Substitution matrix used
+            output='',
+            max_gap_length=20,
+            gap_function=False,              # If False then align2d not done
+                feature_weights=(1., 0., 0., 0., 0., 0.),
+            gap_penalties_1d=(-100, 0),
+            output_weights_file='saligni1d.mtx',
+            similarity_flag=True)   # Ensuring that the dynamic programming
+                                    # matrix is not scaled to a
+                                    # difference matrix
+
+    #Write final alignment
+    aln.write(file=alignment_file, alignment_format='PIR')
+'''
+
+

@@ -12,10 +12,10 @@ readme = "README.md"
 authors = [
     { name = "Alfie-Louise Brownless", email = "abrownless3@gatech.edu" }
 ]
-license = { text = "BSD-3-Clause" }
+license = { text = "GPL-3.0-only" }
 # See https://pypi.org/classifiers/
 classifiers = [
-    "License :: OSI Approved :: BSD License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
 ]
 requires-python = ">=3.8"

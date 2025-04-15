@@ -93,6 +93,22 @@ def get_per_residue_interactions(network, selection='all', msa=False):
 
 
 def get_all_water_distances(network_group, box, selection='No-active-site', msa=False, offset=0):
+    """
+    Collect all distances for each protein-interacting water
+
+    Parameters
+    ----------
+    network_group : list[WaterNetwork]
+        List of WaterNetwork objects
+    box : array-like
+        Dimensions of unit-cell
+    selection : {'No-active-site', 'active-site', 'all'}
+        Analysis selection 
+    msa : bool, optional
+        Indicate whether to use MSA indexing or standard residue indexing. Defualt is False
+    offset : int, optional
+        Residue offset from desired numbering that can be given to match standard residue indexing. Default is 0.
+    """
     tmp_list = []
     residue_dict, interaction_data = get_per_residue_interactions(network_group, selection=selection, msa=msa)
     residue_dict['water_distances'] = {}
@@ -117,7 +133,6 @@ def get_all_water_distances(network_group, box, selection='No-active-site', msa=
                                                    np.array([np.array(water_mol.O.coordinates), np.array(water_mol.H1.coordinates), np.array(water_mol.H2.coordinates)]).reshape(-1,3), box=box))
             dist_arr.append(dist)
         residue_dict['water_distances'][str(res)] = dist_arr
-    print(set(tmp_list))
     return residue_dict, interaction_data
 
 
@@ -154,16 +169,12 @@ def classify_waters(network, ref1_coords, ref2_coords):
     if ref2_coords is None:
         ref2_coords = [(10,0,10)]
 
-    #print('ref1:', ref1_coords)
-    #print('ref2:', ref2_coords)
-    
-    #THERE IS SOME WEIRD STUFF GOING ON WITH THESE SHAPES
+    #Check dimensionality to ensure reference is one array
     if type(ref1_coords) == tuple:
         ref1_coords=tuple(ref1_coords[0][0]) #Careful
     else:
         ref1_coords=tuple(ref1_coords[0]) #Careful
 
-    #THERE IS SOME WEIRD STUFF GOING ON WITH THESE SHAPES
     if type(ref2_coords) == tuple:
         ref2_coords=tuple(ref2_coords[0][0]) #Careful
     else:
@@ -192,7 +203,6 @@ def classify_waters(network, ref1_coords, ref2_coords):
             (f.H2 is not None and (f.H2.index == connection[0] or f.H2.index == connection[1]))
             )][0]
         
-        #Maybe change to using CA coordinates if this is too sensitive
         prot_coords = [f.coordinates for f in network.protein_atoms if (f.index == connection[0] or f.index==connection[1])][0]
         if len(prot_coords) > 0:
             angle1 = get_angles(wat_coords, prot_coords, ref_coords=ref1_coords)

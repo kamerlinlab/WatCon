@@ -9,6 +9,14 @@ dependencies:
   - python
   - pip
   
+  - numpy
+  - pandas
+  - networkx
+  - scikit-learn
+  - mdanalysis
+  - scipy 
+  - biopython
+  - modeller
   - pydata-sphinx-theme
   - sphinx-design
   - sphinx-copybutton
@@ -20,16 +28,8 @@ dependencies:
   - sphinxcontrib-jsmath     
   - sphinxcontrib-qthelp     
   - sphinxcontrib-serializinghtml
-  - numpy
-  - pandas
-  - networkx
-  - scikit-learn
-  - mdanalysis
-  - scipy 
-  - biopython
-  - modeller
 
     # Pip-only installs
   - pip:
-    - -e ../
+    - -e .
 
