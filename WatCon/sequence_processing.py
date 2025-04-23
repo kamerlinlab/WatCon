@@ -11,7 +11,7 @@ from Bio import pairwise2
 from Bio.Seq import Seq
 import os
 
-#from modeller import *
+from modeller import *
 
 def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
     """
