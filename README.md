@@ -35,9 +35,9 @@ Project based on the
 
 ### Citing this Work
 
-If you find this software useful in your work, please cite the following manuscript:
+If you find this software useful in your work, please cite the following preprint:
 
-XXX
+Brownless A-LR, Harrison-Rawn T, Kamerlin SCL. WatCon: A Python Tool for Analysis of Conserved Water Networks Across Protein Families. ChemRxiv. 2025; doi:10.26434/chemrxiv-2025-8526g-v2 This content is a preprint and has not been peer-reviewed.
 
 
 
