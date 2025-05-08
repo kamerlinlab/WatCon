@@ -1513,7 +1513,8 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             #Generate MSA alignment if file does not exist and output MSA indices corresponding to partcicular sequence
             msa_indices_reference = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
             references = [reference_resids, msa_indices_reference]
-
+        else:
+            references=None
 
     if classify_water:
         #Find ref_coords if particular residue is indicated
