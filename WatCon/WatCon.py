@@ -110,6 +110,9 @@ def parse_inputs(filename):
 
     if 'topology_name' in kwargs.keys() and kwargs['topology_name'] == 'None':
         kwargs['topology_name'] = None
+
+    if 'MSA_reference' in kwargs.keys() and kwargs['MSA_reference'] == 'None':
+        kwargs['MSA_reference'] = None
     
     return structure_type, kwargs
 

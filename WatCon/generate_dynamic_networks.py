@@ -1433,7 +1433,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                        cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True, 
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=False,
                        classification_file_base='DYNAMIC', MSA_reference_pdb=None, water_reference_resids=None,  num_workers=4, shortest_path_nodes=None):
-    
+
     """
     Initialize and compute all water networks per frame for a trajectory.
 
