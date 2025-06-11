@@ -322,7 +322,7 @@ class WaterNetwork:
         return self.active_region, list(protein_active), list(water_active)
 
     def find_connections(self, dist_cutoff=3.3, water_active=None, protein_active=None, 
-                        active_region_only=False, water_only=False):
+                        active_region_only=False, water_only=False, max_neighbors=10):
         """
         Find the shortest connections using a K-D Tree.
 
@@ -338,6 +338,8 @@ class WaterNetwork:
             If True, only find connections among active site atoms. Default is False.
         water_only : bool, optional
             If True, only find connections among waters. Default is False.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
         Returns
         -------
@@ -374,7 +376,7 @@ class WaterNetwork:
             return connections  
         # Water-Water connections
         tree = cKDTree(water_coords)
-        dist, indices = tree.query(water_coords, k=10, distance_upper_bound=dist_cutoff)
+        dist, indices = tree.query(water_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
         for i, neighbors in enumerate(indices):
             for j, neighbor in enumerate(neighbors):
@@ -394,7 +396,7 @@ class WaterNetwork:
             protein_names = np.array([atm.name for atm in protein])
 
             tree = cKDTree(protein_coords)
-            dist, indices = tree.query(water_coords, k=10, distance_upper_bound=dist_cutoff)
+            dist, indices = tree.query(water_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
             for i, neighbors in enumerate(indices):
                 for j, neighbor in enumerate(neighbors):
@@ -412,7 +414,7 @@ class WaterNetwork:
         return connections
 
     def find_directed_connections(self, dist_cutoff=2.0, water_active=None, protein_active=None, active_region_only=False, 
-                                    water_only=False, angle_criteria=None):
+                                    water_only=False, angle_criteria=None, max_neighbors=10):
         """
         Find the shortest directed connections using a K-D Tree.
 
@@ -430,6 +432,8 @@ class WaterNetwork:
             If True, only find connections among waters. Default is False.
         angle_criteria: float, optional
             Additional angle criteria for defining hydrogen bonds. Default is None.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
         Returns
         -------
@@ -528,7 +532,7 @@ class WaterNetwork:
             tree = cKDTree(protH_coords)
 
             #Query for distances with water O coordinates
-            dist, indices = tree.query(water_O_coords, k=10, distance_upper_bound=dist_cutoff)
+            dist, indices = tree.query(water_O_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
             for index_near, index_ref in enumerate(indices):
                 for i, distance in enumerate(dist[index_near]):
@@ -574,7 +578,7 @@ class WaterNetwork:
             tree = cKDTree(protO_coords)
 
             #Query for distances with water-H coords
-            dist, indices = tree.query(water_H_coords, k=10, distance_upper_bound=dist_cutoff)
+            dist, indices = tree.query(water_H_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
             for index_near, index_ref in enumerate(indices):
                 for i, distance in enumerate(dist[index_near]):
                     if distance <= dist_cutoff:        
@@ -614,7 +618,7 @@ class WaterNetwork:
         tree = cKDTree(water_O_coords)
 
         #Query for distances with water-H coords
-        dist, indices = tree.query(water_H_coords, k=5, distance_upper_bound=dist_cutoff)
+        dist, indices = tree.query(water_H_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
         
         for index_near, index_ref in enumerate(indices):
@@ -655,7 +659,7 @@ class WaterNetwork:
         return connections
 
     def generate_directed_network(self, msa_indexing=None, active_region_reference=None, active_region_COM=False, active_region_radius=8.0, 
-                                  active_region_only=False, water_only=False, angle_criteria=None, max_connection_distance=2.0):
+                                  active_region_only=False, water_only=False, angle_criteria=None, max_connection_distance=2.0, max_neighbors=10):
         """
         Generate directed graph using H -> O directionality
 
@@ -677,6 +681,8 @@ class WaterNetwork:
             Additional angle criteria to define hydrogen bonds. Defualt is None
         max_connection_distance: float, optional
             Distance cutoff for connections. Default is 2.0 Å.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
 
         Returns
@@ -708,7 +714,9 @@ class WaterNetwork:
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
             #Add edges
-            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=water_active, protein_active=protein_active, active_region_only=active_region_only, water_only=water_only, angle_criteria=angle_criteria)
+            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=water_active, 
+                                                            protein_active=protein_active, active_region_only=active_region_only, 
+                                                            water_only=water_only, angle_criteria=angle_criteria, max_neighbors=max_neighbors)
             for connection in [f for f in self.connections if f[4]=='active_region']:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
 
@@ -724,7 +732,8 @@ class WaterNetwork:
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
             
             #Add edges
-            self.connections = self.find_directed_connections(dist_cutoff=2.5, water_active=None, protein_active=None, active_region_only=False, water_only=water_only)
+            self.connections = self.find_directed_connections(dist_cutoff=2.5, water_active=None, protein_active=None, 
+                                                            active_region_only=False, water_only=water_only, max_neighbors=10)
             for connection in self.connections:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
 
@@ -733,7 +742,7 @@ class WaterNetwork:
 
 
     def generate_network(self, msa_indexing=None, active_region_reference=None, active_region_COM=False, active_region_radius=8.0, 
-                        active_region_only=False, water_only=False, max_connection_distance=3.0):
+                        active_region_only=False, water_only=False, max_connection_distance=3.0, max_neighbors=10):
         """
         Generate network based only on oxygens -- direct comparability to static structure networks
 
@@ -753,6 +762,8 @@ class WaterNetwork:
             If True, only find connections among waters. Default is False.
         max_connection_distance: float, optional
             Distance cutoff for connections. Default is 3.0 Å.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
 
         Returns
@@ -784,7 +795,9 @@ class WaterNetwork:
                     MSA_index = MSA_indices[molecule.resid-1]
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
-            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=water_active, protein_active=protein_active, active_region_only=active_region_only, water_only=water_only)
+            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=water_active, 
+                                                        protein_active=protein_active, active_region_only=active_region_only, 
+                                                        water_only=water_only, max_neighbors=max_neighbors)
             for connection in [f for f in self.connections if f[4]=='active_region']:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
 
@@ -799,7 +812,8 @@ class WaterNetwork:
                     MSA_index = MSA_indices[molecule.resid-1]
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
             
-            self.connections = self.find_connections(dist_cutoff=3.0, water_active=None, protein_active=None, active_region_only=False, water_only=water_only)
+            self.connections = self.find_connections(dist_cutoff=3.0, water_active=None, protein_active=None, 
+                                                        active_region_only=False, water_only=water_only, max_neighbors=max_neighbors)
 
             for connection in self.connections:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
@@ -1098,7 +1112,8 @@ class WaterNetwork:
 
 
 def extract_objects(pdb_file, network_type, custom_selection, active_region_reference, active_region_COM, active_region_radius,
-                     water_name, msa_indexing, active_region_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0):
+                     water_name, msa_indexing, active_region_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0
+                     max_neighbors=10):
     """
     Extract and compute a water network for each frame.
 
@@ -1131,6 +1146,8 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
         Angle cutoff criteria for hydrogen-bonding structures. Default is None.
     max_connection_distance : float, optional
         Maximum distance (in Å) for defining connections in the network. Default is 3.0.
+    max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
     Returns
     -------
@@ -1194,10 +1211,11 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
     
     if directed:
         water_network.generate_directed_network(msa_indexing, active_region_residue, active_region_COM=active_region_COM, active_region_only=active_region_only, active_region_radius=active_region_radius, 
-                                                water_only=water_only, angle_criteria=angle_criteria, max_connection_distance=max_connection_distance)
+                                                water_only=water_only, angle_criteria=angle_criteria, max_connection_distance=max_connection_distance, max_neighbors=max_neigbhbors)
     else:
         water_network.generate_network(msa_indexing, active_region_residue, active_region_COM=active_region_COM, active_region_only=active_region_only,
-                                       active_region_radius=active_region_radius, water_only=water_only, max_connection_distance=max_connection_distance)
+                                       active_region_radius=active_region_radius, water_only=water_only, max_connection_distance=max_connection_distance,
+                                       max_neighbors=max_neighbors)
     return water_network
 
 def get_clusters(list_of_networks, cluster, min_samples, coordinates=None, eps=0.0, n_jobs=1, filename_base='STATIC_CLUSTER'):
@@ -1242,7 +1260,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=True,
                        cluster_coordinates=False, clustering_method='hdbscan', cluster_water_only=True, min_cluster_samples=15, eps=None, msa_indexing=True,
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=True, classification_file_base='STATIC',
-                       MSA_reference_pdb=None, water_reference_resids=None, num_workers=4, shortest_path_nodes=None):
+                       MSA_reference_pdb=None, water_reference_resids=None, num_workers=4, shortest_path_nodes=None, max_neighbors=10):
                        
     """
     Initialize and compute all water networks for a directory of pdbs.
@@ -1316,6 +1334,8 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
         Number of CPU cores to use for parallel computation. Default is 4.
     shortest_path_nodes : list, optional
         List of tuples of nodes to perform shortest path analysis among. Default is None (shortest path among entire network will be returned)
+    max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
 
     Returns
@@ -1417,7 +1437,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
 
         network = extract_objects(os.path.join(pdb_dir, pdb_file), network_type, custom_selection, active_region_reference=msa_active_region_ref, active_region_COM=active_region_COM,
                                   active_region_radius=active_region_radius, water_name=water_name, msa_indexing=msa_indices, 
-                                  active_region_only=active_region_only, directed=include_hydrogens, angle_criteria=angle_criteria, max_connection_distance=max_distance)
+                                  active_region_only=active_region_only, directed=include_hydrogens, angle_criteria=angle_criteria, max_connection_distance=max_distance, max_neighbors=max_neighbors)
 
         if classify_water: 
             if msa_indices is None:

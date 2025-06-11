@@ -114,6 +114,12 @@ def parse_inputs(filename):
     if 'MSA_reference' in kwargs.keys() and kwargs['MSA_reference'] == 'None':
         kwargs['MSA_reference'] = None
     
+    if 'max_neighbors' in kwargs.keys():
+        if int(kwargs['max_neighbors']) < 2:
+            print('ERROR: Please select a max_neighbors value greater than 1.')
+            raise ValueError
+        kwargs['max_neighbors'] = int(kwargs['max_neighbors'])
+    
     return structure_type, kwargs
 
 #NOTE NEED TO MAKE IT SO THAT YOU CAN TELL IT TO MAKE THE FASTAS FROM THE PDBS

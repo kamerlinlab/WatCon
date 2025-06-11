@@ -319,7 +319,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         self.active_region = list(active_region_atoms)  # Convert set back to list if order matters
         return self.active_region, list(protein_active), list(water_active)
 
-    def find_connections(self, dist_cutoff=3.3, water_active=None, protein_active=None, active_region_only=False, water_only=False):
+    def find_connections(self, dist_cutoff=3.3, water_active=None, protein_active=None, 
+                        active_region_only=False, water_only=False, max_neighbors=10):
         """
         Find the shortest connections using a K-D Tree.
 
@@ -335,6 +336,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             If True, only find connections among active site atoms. Default is False.
         water_only : bool, optional
             If True, only find connections among waters. Default is False.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
         Returns
         -------
@@ -372,7 +375,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
         # Water-Water connections
         tree = cKDTree(water_coords)
-        dist, indices = tree.query(water_coords, k=10, distance_upper_bound=dist_cutoff)
+        dist, indices = tree.query(water_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
         for i, neighbors in enumerate(indices):
             for j, neighbor in enumerate(neighbors):
@@ -393,7 +396,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             protein_names = np.array([atm.name for atm in protein])
 
             tree = cKDTree(protein_coords)
-            dist, indices = tree.query(water_coords, k=10, distance_upper_bound=dist_cutoff)
+            dist, indices = tree.query(water_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
             for i, neighbors in enumerate(indices):
                 for j, neighbor in enumerate(neighbors):
@@ -413,7 +416,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
 
     def find_directed_connections(self, dist_cutoff=2.5, water_active=None, protein_active=None, active_region_only=False, 
-                                    water_only=False, angle_criteria=None):
+                                    water_only=False, angle_criteria=None, max_neighbors=10):
         """
         Find the shortest directed connections using a K-D Tree.
 
@@ -431,6 +434,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             If True, only find connections among waters. Default is False.
         angle_criteria: float, optional
             Additional angle criteria for defining hydrogen bonds. Default is None.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
         Returns
         -------
@@ -528,7 +533,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             tree = cKDTree(protH_coords)
 
             #Query for distances with water O coordinates
-            dist, indices = tree.query(water_O_coords, k=10, distance_upper_bound=dist_cutoff)
+            dist, indices = tree.query(water_O_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
             for index_near, index_ref in enumerate(indices):
                 for i, distance in enumerate(dist[index_near]):
@@ -582,7 +587,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             tree = cKDTree(protO_coords)
 
             #Query for distances with water-H coords
-            dist, indices = tree.query(water_H_coords, k=10, distance_upper_bound=dist_cutoff)
+            dist, indices = tree.query(water_H_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
             for index_near, index_ref in enumerate(indices):
                 for i, distance in enumerate(dist[index_near]):
                     if distance <= dist_cutoff:        
@@ -629,7 +634,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         tree = cKDTree(water_O_coords)
 
         #Query for distances with water-H coords
-        dist, indices = tree.query(water_H_coords, k=10, distance_upper_bound=dist_cutoff)
+        dist, indices = tree.query(water_H_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
         
         for index_near, index_ref in enumerate(indices):
@@ -681,7 +686,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         tree = cKDTree(water_H_coords)
 
         #Query for distances with water-H coords
-        dist, indices = tree.query(water_O_coords, k=10, distance_upper_bound=dist_cutoff)
+        dist, indices = tree.query(water_O_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
 
         
         for index_near, index_ref in enumerate(indices):
@@ -733,7 +738,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
 
 
     def generate_oxygen_network(self, box, msa_indexing=None, active_region_reference=None, active_region_COM=False, active_region_radius=8.0, 
-                                active_region_only=False, water_only=False, max_connection_distance=3.0):
+                                active_region_only=False, water_only=False, max_connection_distance=3.0, max_neighbors=10):
         """
         Generate network based only on oxygens -- direct comparability to static structure networks
 
@@ -753,6 +758,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             If True, only find connections among waters. Default is False.
         max_connection_distance: float, optional
             Distance cutoff for connections. Default is 2.0 Å.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
 
         Returns
@@ -786,7 +793,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     MSA_index = MSA_indices[molecule.resid-1]           
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
-            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=water_active, protein_active=protein_active, active_region_only=active_region_only, water_only=water_only)
+            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=water_active, protein_active=protein_active, 
+                                                    active_region_only=active_region_only, water_only=water_only, max_neighbors=max_neighbors)
             for connection in [f for f in self.connections if f[4]=='active_region']:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
 
@@ -801,7 +809,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     MSA_index = MSA_indices[molecule.resid-1]  
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=None)
             
-            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=None, protein_active=None, active_region_only=False, water_only=water_only)
+            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=None, protein_active=None, 
+                                                    active_region_only=False, water_only=water_only, max_neighbors=10)
 
             for connection in self.connections:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
@@ -812,7 +821,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         return self.graph
 
     def generate_directed_network(self, box, msa_indexing=None, active_region_reference=None, active_region_COM=False, active_region_radius=8.0, 
-                                  active_region_only=False, water_only=False, angle_criteria=None, max_connection_distance=2.0):
+                                  active_region_only=False, water_only=False, angle_criteria=None, max_connection_distance=2.0, max_neighbors=10):
         """
         Generate directed graph using H -> O directionality
 
@@ -834,6 +843,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             Additional angle criteria to define hydrogen bonds. Defualt is None
         max_connection_distance: float, optional
             Distance cutoff for connections. Default is 2.0 Å.
+        max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
 
         Returns
@@ -866,7 +877,9 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
             #Add edges
-            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=water_active, protein_active=protein_active, active_region_only=active_region_only, water_only=water_only, angle_criteria=angle_criteria)
+            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=water_active, 
+                                                            protein_active=protein_active, active_region_only=active_region_only, 
+                                                            water_only=water_only, angle_criteria=angle_criteria, max_neighbors=max_neighbors)
             for connection in [f for f in self.connections if f[4]=='active_region']:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
 
@@ -882,7 +895,8 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
             
             #Add edges
-            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=None, protein_active=None, active_region_only=False, water_only=water_only)
+            self.connections = self.find_directed_connections(dist_cutoff=max_connection_distance, water_active=None, protein_active=None,
+                                                            active_region_only=False, water_only=water_only, max_neighbors=max_neighbors)
             for connection in self.connections:
                 G.add_edge(connection[0], connection[1], connection_type=connection[3], active_region=connection[4])
 
@@ -1269,7 +1283,7 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
     if active_region_COM:
         reference = u.select_atoms('resid 220 or resid 214').center_of_mass()
         x, y, z = reference  # Unpack coordinates
-        print(x,y,z)
+        print('Active region coordinates are', x,y,z)
         # Properly format the selection string
         ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and point {x} {y} {z} 9", updating=True)
     
@@ -1286,7 +1300,7 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
 
 def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type, custom_selection, 
                               active_region_reference, active_region_COM, active_region_radius, water_name, msa_indexing, 
-                              active_region_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0):
+                              active_region_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0, max_neighbors=10):
     """
     Extract and compute a water network for each frame.
 
@@ -1323,6 +1337,8 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
         Angle cutoff criteria for hydrogen-bonding structures. Default is None.
     max_connection_distance : float, optional
         Maximum distance (in Å) for defining connections in the network. Default is 3.0.
+    max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
     Returns
     -------
@@ -1418,10 +1434,10 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
     if directed:
         water_network.generate_directed_network(u.dimensions, msa_indexing, active_region_residue, active_region_COM=active_region_COM, active_region_radius=active_region_radius, 
                                                 active_region_only=active_region_only, water_only=water_only, angle_criteria=angle_criteria, 
-                                                max_connection_distance=max_connection_distance)
+                                                max_connection_distance=max_connection_distance, max_neighbors=max_neighbors)
     else:
         water_network.generate_oxygen_network(u.dimensions, msa_indexing, active_region_residue, active_region_COM=active_region_COM, active_region_radius=active_region_radius, 
-                                              active_region_only=active_region_only, water_only=water_only, max_connection_distance=max_connection_distance)
+                                              active_region_only=active_region_only, water_only=water_only, max_connection_distance=max_connection_distance, max_neighbors=max_neighbors)
     
     return water_network
 
@@ -1432,7 +1448,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=False, 
                        cluster_coordinates=False, clustering_method='hdbscan', min_cluster_samples=15, eps=None, msa_indexing=True, 
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=False,
-                       classification_file_base='DYNAMIC', MSA_reference_pdb=None, water_reference_resids=None,  num_workers=4, shortest_path_nodes=None):
+                       classification_file_base='DYNAMIC', MSA_reference_pdb=None, water_reference_resids=None,  num_workers=4, shortest_path_nodes=None, max_neighbors=10):
 
     """
     Initialize and compute all water networks per frame for a trajectory.
@@ -1506,6 +1522,8 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         Number of CPU cores to use for parallel computation. Default is 4.
     shortest_path_nodes : list, optional
         List of tuples of nodes to perform shortest path analysis among. Default is None (shortest path among entire network will be returned)
+    max_neighbhors: int, optional
+            Maximum number of neighbors to calculate in KDTree
 
     Returns
     -------
@@ -1518,6 +1536,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             Dictionary of cluster centers (if clustering is on)
 
     """
+    print('Testing with max_neighbors', max_neighbors)
     def process_frame(frame_idx, coords=None, ref_coords=None, residues=None, references=None):
         """
         Internal function to make parallelizing each frame easier
@@ -1526,7 +1545,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         Calculated metrics for given frame
         """
 
-        print(f"Processing frame {frame_idx}")
+        #print(f"Processing frame {frame_idx}")
 
         #If an MSA has been performed
         if msa_indexing == True:
@@ -1538,11 +1557,12 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                 msa_indices = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
             #If MSA cannot be done, use residues as msa_indices
             except:
-                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. Check your naming schemes!')
+                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. WatCon is looking for a fasta entry including {topology_file.split('.')[0].split('_')[0]}. Check your naming schemes!')
                 msa_indices = residues
 
         else:
             msa_indices = None
+            print('Warning: Setting msa_indices to None. If this is not desired, make sure to apply msa_indexing=True.')
 
         if active_region_reference is not None and MSA_reference_pdb is not None:
             u = mda.Universe(os.path.join(pdb_dir, pdb_file))
@@ -1601,7 +1621,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         network = extract_objects_per_frame(pdb_file, traj_file, frame_idx, network_type, custom_selection, active_region_reference, active_region_COM,
                                             active_region_radius=active_region_radius, water_name=water_name, msa_indexing=msa_indices, 
                                             active_region_only=active_region_only, directed=include_hydrogens, angle_criteria=angle_criteria, 
-                                            max_connection_distance=max_distance)
+                                            max_connection_distance=max_distance, max_neighbors=max_neighbors)
 
         metrics = {}
         #Calculate metrics as per user input
@@ -1718,7 +1738,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             try:
                 fasta_individual = [f for f in os.listdir(fasta_directory) if (MSA_reference_pdb.split('_')[0] in f and 'fa' in f)][0] #THIS IS NOT GENERALIZED
             except:
-                print(f'Could not find an equivalent fasta file for {MSA_reference_pdb}')
+                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. WatCon is looking for a fasta entry including {topology_file.split('.')[0].split('_')[0]}. Check your naming schemes!')
 
             #Generate MSA alignment if file does not exist and output MSA indices corresponding to partcicular sequence
             msa_indices_reference = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))

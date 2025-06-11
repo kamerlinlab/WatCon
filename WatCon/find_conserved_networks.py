@@ -202,7 +202,7 @@ def cluster_coordinates_only(coordinate_list, cluster='hdbscan', min_samples=10,
     return(cluster_labels, cluster_centers)
 
 
-def find_commonality(networks, centers, names, dist_cutoff=3):
+def find_commonality(networks, centers, names, dist_cutoff=3, local_dens_radius=6):
     """
     Find the commonality of a list of networks relative to a summary network created from clustering.
 
@@ -212,6 +212,12 @@ def find_commonality(networks, centers, names, dist_cutoff=3):
         List of WaterNetwork objects to be analyzed.
     centers : array-like
         Locations of clustered centers.
+    names : list[str], optional
+        List of IDs
+    dist_cutoff : float
+        Distance cutoff for classifying conserved water
+    local_dens_radius : float
+        Radius cutoff for calculating local water density
 
     Returns
     -------
@@ -230,7 +236,7 @@ def find_commonality(networks, centers, names, dist_cutoff=3):
             y1 = wat.O.coordinates[1]
             z1 = wat.O.coordinates[2]
             if any((dist(x1,y1,z1, x2,y2,z2)<dist_cutoff) for (x2, y2, z2) in centers):
-                local_waters_count = len([wat for wat in net.water_molecules if (dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)<6 and dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)>2)])+1
+                local_waters_count = len([wat for wat in net.water_molecules if (dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)<local_dens_radius and dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)>2)])+1
                 conserved += 1/local_waters_count
             else:
                 unique += 1
