@@ -1002,7 +1002,7 @@ class WaterNetwork:
         float
             The computed graph entropy.
         """
-        def degree_distribuiton(G):
+        def degree_distribution(G):
             vk = dict(G.degree())
             vk = list(vk.values())
 
@@ -1023,7 +1023,7 @@ class WaterNetwork:
         else:
             S = self.graph.edge_subgraph([(edge1, edge2) for (edge1,edge2, data) in self.graph.edges(data=True) if data['active_region']==selection])
 
-        k, Pk = degree_distribuiton(S)
+        k, Pk = degree_distribution(S)
 
         H = 0
         for p in Pk:
