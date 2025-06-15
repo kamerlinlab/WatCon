@@ -202,7 +202,7 @@ def cluster_coordinates_only(coordinate_list, cluster='hdbscan', min_samples=10,
     return(cluster_labels, cluster_centers)
 
 
-def find_commonality(networks, centers, names, dist_cutoff=3, local_dens_radius=6):
+def find_commonality(networks, centers, names, dist_cutoff=1.5, local_dens_radius=6):
     """
     Find the commonality of a list of networks relative to a summary network created from clustering.
 

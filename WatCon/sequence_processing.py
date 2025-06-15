@@ -300,7 +300,7 @@ def generate_msa_alignment(alignment_file, combined_fasta, fasta_individual):
 
     Returns
     -------
-    list of int
+    list[int]
         List of MSA indices corresponding to the sequence of interest.
     """
     #Make alignment file with modeller if name does not exist
@@ -377,15 +377,81 @@ def convert_msa_to_individual(msa_indices, msa_indices_ref, resids, resid_sequen
         desired_resid=None
         print('Failed')
 
-    #individual_index = np.where(msa_indices == reference_msa)[0][0]
-    #print(individual_index)
-
-    # Extract the desired residue ID
-    #desired_resid = int(resids[individual_index[0]]) 
-
     return desired_resid
 
+def suggest_references(input_pdb, pymol_structure_file, num_options=1, min_res=50, max_res=40, dist_cutoff=20):
+    """
+    Suggest reference points based on secondary structure and distance criteria.
 
+    Parameters
+    ----------
+    input_pdb : str
+        Path to MDAnalysis-readable topology file
+    pymol_structure_file : str
+        Path to PyMOL file outputted from WatCon.print_structure_from_pymol
+    num_options : int, optional
+        Desired number of reference options to return. Default is 1.
+    min_res : int, optional
+        First residue option. Default is 50.
+    max_res : int, optional
+        Last residue option (counted backwards from end of sequence). Default is 40.
+    dist_cutoff : float, optional
+        Minimum distance two residues need to be to be considered a potential pair. Default is 20A.
+
+    Returns
+    -------
+    list[tuple(int)]
+        List of possible reference pairs
+
+    """
+    def read_structure(pymol_file):
+        """
+        Read structural information from PyMOL-outputted text file
+        """
+        #Check that PyMOL-outputted text file exists.
+        try:
+            with open(pymol_file, 'r') as FILE:
+                lines = FILE.readlines()
+                return lines
+        except FileNotFoundError:
+            print('Cannot find corresponding structural information file.\n \
+                    Please open a PyMOL session with the structure of interest and run WatCon.print_structure_from_pymol.\n \
+                    Make sure the path to the corresponding file is correct.')
+            raise FileNotFoundError
+
+    def create_options(lines, min_res, max_res):
+        """
+        Return list of residue options based on structure and given residue range
+        """
+        options = []
+        for line in lines[min_res:-max_res]:
+            res, resnum, ss = line.split()
+            if ss != 'L':
+                options.append(resnum)
+        return options
+
+    def pick_pair(u, options, num_options=1, dist_cutoff=20):
+        """
+        Return pairs of residues which could work for two-angle references
+        """
+        pairs = []
+        cur_option = 0
+        while cur_option < no_options:
+            for option1 in options:
+                coords1 = u.select_atoms(f"resid {option1} and name CA").positions
+                for option2 in options[::-1]:
+                    coords2 = u.select_atoms(f"resid {option2} and name CA").positions
+                    distance = dist(*coords1[0], *coords2[0])
+                    if distance > dist_cutoff:
+                            pairs.append((option1, option2))
+                            cur_option += 1
+        return(pairs)
+
+    u = mda.Universe(input_pdb)
+    lines = read_structure(pymol_structure_file)
+    options = create_options(lines, min_res, max_res)
+    return pick_pair(u, options, num_options, dist_cutoff)
+    
 
 
 '''

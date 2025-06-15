@@ -1112,7 +1112,7 @@ class WaterNetwork:
 
 
 def extract_objects(pdb_file, network_type, custom_selection, active_region_reference, active_region_COM, active_region_radius,
-                     water_name, msa_indexing, active_region_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0
+                     water_name, msa_indexing, active_region_only=False, directed=False, angle_criteria=None, max_connection_distance=3.0,
                      max_neighbors=10):
     """
     Extract and compute a water network for each frame.
