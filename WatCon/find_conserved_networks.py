@@ -241,7 +241,6 @@ def find_commonality(networks, centers, names, dist_cutoff=1.5, local_dens_radiu
             else:
                 unique += 1
         commonality_dict[names[i]] = conserved/len(centers)
-        print(names[i], conserved/len(centers))
     return commonality_dict
 
 
