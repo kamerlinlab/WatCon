@@ -212,7 +212,7 @@ def find_commonality(networks, centers, names, dist_cutoff=1.5, local_dens_radiu
         List of WaterNetwork objects to be analyzed.
     centers : array-like
         Locations of clustered centers.
-    names : list[str], optional
+    names : list[str]
         List of IDs
     dist_cutoff : float
         Distance cutoff for classifying conserved water
@@ -230,17 +230,18 @@ def find_commonality(networks, centers, names, dist_cutoff=1.5, local_dens_radiu
     for i, network in enumerate(networks):
         conserved = 0
         unique = 0
-        net = networks[i]
-        for wat in net.water_molecules:
+        #net = networks[i]
+        for wat in network.water_molecules:
             x1 = wat.O.coordinates[0]
             y1 = wat.O.coordinates[1]
             z1 = wat.O.coordinates[2]
             if any((dist(x1,y1,z1, x2,y2,z2)<dist_cutoff) for (x2, y2, z2) in centers):
-                local_waters_count = len([wat for wat in net.water_molecules if (dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)<local_dens_radius and dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)>2)])+1
+                local_waters_count = len([wat for wat in network.water_molecules if (dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)<local_dens_radius and dist(wat.O.coordinates[0], wat.O.coordinates[1],wat.O.coordinates[2],x1,y1,z1)>2)])+1
                 conserved += 1/local_waters_count
             else:
                 unique += 1
         commonality_dict[names[i]] = conserved/len(centers)
+        print(names[i], conserved/len(centers))
     return commonality_dict
 
 

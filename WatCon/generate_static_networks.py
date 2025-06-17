@@ -1352,6 +1352,7 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
     """
     pdb_dir = structure_directory
     names = [f.split('.')[0] for f in os.listdir(pdb_dir)]
+    names.sort()
 
     if multi_model_pdb:
         print('Use dynamic networks for multi model pdbs')

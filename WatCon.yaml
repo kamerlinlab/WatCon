@@ -6,9 +6,9 @@ channels:
   - salilab
 dependencies:
     # Base depends
-  - python
+  - python=3.10
   - pip
-  
+  - joblib=1.3.2  
   - numpy
   - pandas
   - networkx
