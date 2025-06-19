@@ -31,7 +31,7 @@ After you create the WatCon conda environment, you will receive this message:
 
 .. code-block:: txt
 
-   Edit /anaconda3/envs/WatCon/lib/modeller-10.6/modlib/modeller/config.py
+   Edit /anaconda3/envs/WatCon/lib/modeller-10.7/modlib/modeller/config.py
    and replace XXXX with your Modeller license key
    (or set the KEY_MODELLER environment variable before running 'conda install').
 
@@ -51,3 +51,7 @@ or simply import WatCon as a python package directly:
    import WatCon.sequence_processing
 
    sequence_processing.pdb_to_fastas('clean_pdbs/structure1.pdb', 'fasta', 'PTP1B')
+
+
+.. note::
+   WatCon is compatible with Python versions >3.9 and <3.12. Attempting to use WatCon with Python versions outside of this range may result in unexpected behavior. 

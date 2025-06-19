@@ -1238,7 +1238,7 @@ def get_clusters(coordinates, cluster, min_samples=10, eps=0.0, n_jobs=1, filena
     return cluster_labels, cluster_centers
 
 def collect_densities(topology_file, trajectory_file, active_region_definition, active_region_COM, custom_selection, 
-                      water_name, water_oxygen, output_name):
+                      distance, water_name, water_oxygen, output_name):
     """
     Calculate density of water positions, output density file, calculate hotspots from densities, and output PDB file corresponding to cluster hotspots.
 
@@ -1246,14 +1246,16 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
     ----------
     pdb_file : str
         Full path to MDAnalysis-readable topology file
-    trajectory_file : str
-        Full path to MDAnalysis-readable trajectory file
+    trajectory_file : list[str]
+        List of all relevant trajectories
     active_region_definition : str
         MDAnalysis selection language to define active site
     active_region_COM : bool
         Indicate whether to use center of mass for active site definition
     custom_selection : str
         MDAnalysis selection language to include custom residues in protein definition
+    distance : float
+        Distance around active_site_definition
     water_name : str
         Resname for water
     water_oxygen : str
@@ -1267,7 +1269,7 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
         Coordinates of density hotspots
     """
     from MDAnalysis.analysis import align, density
-    from find_conserved_networks import find_clusters_from_densities
+    from WatCon.find_conserved_networks import find_clusters_from_densities
 
     #Perform density analysis
     ref = mda.Universe(topology_file)
@@ -1277,18 +1279,23 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
     align.AlignTraj(u, ref, select='name CA', filename='tmp.dcd', in_memory=False).run()
 
     u = mda.Universe(topology_file, 'tmp.dcd')
-    ag = u.select_atoms(f'protein or {custom_selection}')
+
+    if custom_selection is not None:
+        tmp_txt = f"or {custom_selection}"
+    else:
+        tmp_txt = ''
+    ag = u.select_atoms(f'protein {tmp_txt}')
     ag.write(f'{output_name}.pdb')
 
     if active_region_COM:
-        reference = u.select_atoms('resid 220 or resid 214').center_of_mass()
+        reference = u.select_atoms(f'{active_region_definition}').center_of_mass()
         x, y, z = reference  # Unpack coordinates
         print('Active region coordinates are', x,y,z)
         # Properly format the selection string
-        ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and point {x} {y} {z} 9", updating=True)
+        ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and (sphzone {distance} point {x} {y} {z})", updating=True)
     
     else:
-        ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and {active_region_definition}", updating=True)
+        ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and (sphzone {distance} {active_region_definition})", updating=True)
 
     D = density.DensityAnalysis(ow, delta=1.0)
     D.run()
@@ -1557,7 +1564,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                 msa_indices = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
             #If MSA cannot be done, use residues as msa_indices
             except:
-                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. WatCon is looking for a fasta entry including {topology_file.split('.')[0].split('_')[0]}. Check your naming schemes!')
+                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. WatCon is looking for a fasta entry including {topology_file.split(".")[0].split("_")[0]}. Check your naming schemes!')
                 msa_indices = residues
 
         else:
@@ -1738,7 +1745,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             try:
                 fasta_individual = [f for f in os.listdir(fasta_directory) if (MSA_reference_pdb.split('_')[0] in f and 'fa' in f)][0] #THIS IS NOT GENERALIZED
             except:
-                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. WatCon is looking for a fasta entry including {topology_file.split('.')[0].split('_')[0]}. Check your naming schemes!')
+                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. WatCon is looking for a fasta entry including {topology_file.split(".")[0].split("_")[0]}. Check your naming schemes!')
 
             #Generate MSA alignment if file does not exist and output MSA indices corresponding to partcicular sequence
             msa_indices_reference = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
