@@ -1297,13 +1297,19 @@ def collect_densities(topology_file, trajectory_file, active_region_definition, 
     else:
         ow = u.select_atoms(f"(resname {water_name} and name {water_oxygen}) and (sphzone {distance} {active_region_definition})", updating=True)
 
+    print(len(ow))
     D = density.DensityAnalysis(ow, delta=1.0)
     D.run()
     D.results.density.convert_density('TIP3P')
     D.density.export(f"{output_name}.dx", type='double')
 
-    hotspot_coords = find_clusters_from_densities(f"{output_name}.dx", output_name=f"{output_name}_densityclusters", threshold=1.5)
-    return hotspot_coords
+    try:
+        hotspot_coords = find_clusters_from_densities(f"{output_name}.dx", output_name=f"{output_name}_densityclusters", threshold=1.0)
+        return hotspot_coords
+    except TypeError:
+        print('Could not find hotspots from current densities.')
+        return None
+    
 
 def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type, custom_selection, 
                               active_region_reference, active_region_COM, active_region_radius, water_name, msa_indexing, 
@@ -1543,7 +1549,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             Dictionary of cluster centers (if clustering is on)
 
     """
-    print('Testing with max_neighbors', max_neighbors)
+
     def process_frame(frame_idx, coords=None, ref_coords=None, residues=None, references=None):
         """
         Internal function to make parallelizing each frame easier
@@ -1552,7 +1558,7 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
         Calculated metrics for given frame
         """
 
-        #print(f"Processing frame {frame_idx}")
+        print(f"Processing frame {frame_idx}")
 
         #If an MSA has been performed
         if msa_indexing == True:
@@ -1568,8 +1574,9 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
                 msa_indices = residues
 
         else:
-            msa_indices = None
-            print('Warning: Setting msa_indices to None. If this is not desired, make sure to apply msa_indexing=True.')
+            msa_indices = residues
+            #Used to be NONE
+            #print('Warning: Setting msa_indices to default residues (no MSA alignment). If this is not desired, make sure to apply msa_indexing=True.')
 
         if active_region_reference is not None and MSA_reference_pdb is not None:
             u = mda.Universe(os.path.join(pdb_dir, pdb_file))
@@ -1756,7 +1763,10 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
     if classify_water:
         #Find ref_coords if particular residue is indicated
         if water_reference_resids is not None:
-            u = mda.Universe(os.path.join(structure_directory, MSA_reference_pdb))
+            if MSA_reference_pdb is not None:
+                u = mda.Universe(os.path.join(structure_directory, MSA_reference_pdb))
+            else:
+                u = mda.Universe(pdb_file)
 
             #Allows for maximum 2 reference resids
             if isinstance(water_reference_resids, list):

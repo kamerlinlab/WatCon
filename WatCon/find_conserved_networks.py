@@ -528,9 +528,8 @@ def find_clusters_from_densities(density_file, output_name=None, threshold=1.5):
     neighborhood = np.ones((3,3,3))
     local_max = (data == ndimage.maximum_filter(data, footprint=neighborhood))
     hotspot_indices = np.argwhere(local_max & (data > threshold))
-
-    hotspot_coords = np.array([origin + idx * delta] for idx in hotspot_indices)
-
+    
+    hotspot_coords = np.array([origin + idx * delta for idx in hotspot_indices])
     with open(f"{output_name}.pdb", 'w') as FILE:
         for i, (x,y,z) in enumerate(hotspot_coords, start=1):
             FILE.write(f"ATOM{i:5d}  O   HOH     1    {x:8.3f}{y:8.3f}{z:8.3f}  1.00  0.00           O  \n")

@@ -404,6 +404,8 @@ def suggest_references(input_pdb, pymol_structure_file, num_options=1, min_res=5
         List of possible reference pairs
 
     """
+    import mdanalysis as mda
+    
     def read_structure(pymol_file):
         """
         Read structural information from PyMOL-outputted text file

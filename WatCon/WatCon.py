@@ -113,6 +113,8 @@ def parse_inputs(filename):
 
     if 'MSA_reference' in kwargs.keys() and kwargs['MSA_reference'] == 'None':
         kwargs['MSA_reference'] = None
+    if 'MSA_reference_pdb' in kwargs.keys() and kwargs['MSA_reference_pdb'] == 'None':
+        kwargs['MSA_reference_pdb'] = None
     
     if 'max_neighbors' in kwargs.keys():
         if int(kwargs['max_neighbors']) < 2:
