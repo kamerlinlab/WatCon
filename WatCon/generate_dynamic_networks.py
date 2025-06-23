@@ -1440,8 +1440,15 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
 
     #Add waters to network
     for mol in ag_wat.residues:
-        ats = [atom for atom in mol.atoms]
+        if len(mol.atoms) > 3:
+            valid_atoms = [f for f in mol.atoms if ('H' in f.name or 'O' in f.name)]
+        else:
+            valid_atoms = mol.atoms
+
+        
+        ats = [atom for atom in valid_atoms]
         #Water molecules are objects which contain H1, H2, O atoms
+
         water_network.add_water(mol.resid, *ats, mol.resid)
     #Either find connections among only oxygens in waters or add hydrogens as well
     if directed:
