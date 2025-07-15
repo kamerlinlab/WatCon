@@ -12,7 +12,48 @@ from Bio.Seq import Seq
 import os
 
 from modeller import *
+def msa_with_modeller(alignment_file, combined_fasta):
+    """
+    Perform Multiple Sequence Alignment (MSA) using Modeller.
 
+    Note
+    ----
+    If the proteins are not closely related, it may be better to use a more sophisticated alignment method.
+
+    Parameters
+    ----------
+    alignment_file : str
+        Name of the file to write the alignment results to.
+    combined_fasta : str
+        Path to a FASTA file containing sequences of all proteins.
+
+    Returns
+    -------
+    None
+    """
+
+    log.verbose()
+
+    #Initialize environment
+    env = environ()
+    env.io.atom_files_directory='./'
+    
+    #Perform alignment, using default modeller parameters
+    aln = alignment(env, file=combined_fasta, alignment_format='FASTA')
+    aln.salign(rr_file='$(LIB)/as1.sim.mat',  # Substitution matrix used
+            output='',
+            max_gap_length=20,
+            gap_function=False,              # If False then align2d not done
+                feature_weights=(1., 0., 0., 0., 0., 0.),
+            gap_penalties_1d=(-100, 0),
+            output_weights_file='saligni1d.mtx',
+            similarity_flag=True)   # Ensuring that the dynamic programming
+                                    # matrix is not scaled to a
+                                    # difference matrix
+
+    #Write final alignment
+    aln.write(file=alignment_file, alignment_format='PIR')
+    
 def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
     """
     Perform a built-in structural alignment.
@@ -67,7 +108,20 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', 
         chain = same_chain[i]
         pdb_file = os.path.join(pdb_dir, ref_pdb)
 
-        m = Model(env, file=pdb_file, model_segment=('FIRST:'+chain, 'LAST:'+chain))
+        if isinstance(chain, str):
+            try:
+                m = Model(env, file=pdb_file, model_segment=('FIRST:'+chain, 'LAST:'+chain))
+            except:
+                #If chain of interest is not found, use chain 'X'
+                m = Model(env, file=pdb_file, model_segment=('FIRST:'+'X', 'LAST:'+'X'))
+        else:
+            #If tuple, assume user wants Chain [0] - Chain [1]x
+            try:
+                m = Model(env, file=pdb_file, model_segment=('FIRST:'+chain[0], 'LAST:'+chain[1]))
+            except:
+                #If chain of interest is not found, use chain 'X'
+                m = Model(env, file=pdb_file, model_segment=('FIRST:'+'X', 'LAST:'+'X'))
+
         aln.append_model(m, atom_files=os.path.join(pdb_dir, ref_pdb), align_codes=ref_pdb)
     
         aln.malign()
@@ -151,6 +205,7 @@ def align_with_waters(pdb_dir, rotation_matrices, translation_vectors, out_dir='
         transformed_coords = np.dot(coordinates, rotation_matrix.T) + translation_vector
         return transformed_coords
 
+    os.makedirs(out_dir, exist_ok=True)
     parser = PDBParser()
     pdbs = os.listdir(pdb_dir)
     pdbs.sort()
@@ -438,7 +493,8 @@ def suggest_references(input_pdb, pymol_structure_file, num_options=1, min_res=5
         """
         pairs = []
         cur_option = 0
-        while cur_option < no_options:
+        dist = lambda x1, y1, z1, x2, y2, z2: np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
+        while cur_option < num_options:
             for option1 in options:
                 coords1 = u.select_atoms(f"resid {option1} and name CA").positions
                 for option2 in options[::-1]:

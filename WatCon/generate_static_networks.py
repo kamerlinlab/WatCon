@@ -1207,6 +1207,8 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
         ats = [atom for atom in mol.atoms if 'O' in atom.name]
 
         #Water molecules are objects which contain H1, H2, O atoms
+        if len([f for f in ats if f.name=='O']) > 1:
+            raise SystemExit(f'Detected multiple oxygen atoms per one water molecule, exiting. Check for duplicates in residue {mol.resid}!')
         water_network.add_water(mol.resid, *ats, mol.resid)
     
     if directed:
@@ -1372,11 +1374,13 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
         #If an MSA has been performed
         if msa_indexing == True:
             #Assuming fasta file is named similarly to the pdb -- need sequence files for MSA alignment
+            fasta_individual = [f for f in os.listdir(fasta_directory) if (pdb_file.split('_')[0] in f and 'fa' in f)]
+            if len(fasta_individual) == 0:
+                fasta_individual = [f for f in os.listdir(fasta_directory) if (pdb_file.split('.')[0] in f and 'fa' in f)]
             try:
-                fasta_individual = [f for f in os.listdir(fasta_directory) if (pdb_file.split('_')[0] in f and 'fa' in f)][0] #THIS IS NOT GENERALIZED
+                fasta_individual = fasta_individual[0]
             except:
-                print(f'Warning: Could not find an equivalent fasta file for {pdb_file}. Check your naming schemes!')
-                raise ValueError
+                raise SystemExit(f'Warning: Could not find an equivalent fasta file for {pdb_file}, exiting. Check your naming schemes!')
 
             #Generate MSA alignment if file does not exist and output MSA indices corresponding to partcicular sequence
             msa_indices = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
@@ -1526,10 +1530,13 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
         if MSA_reference_pdb is not None:
             u = mda.Universe(os.path.join(pdb_dir, MSA_reference_pdb))
             reference_resids = u.residues.resids.tolist()
+            fasta_individual = [f for f in os.listdir(fasta_directory) if (MSA_reference_pdb.split('_')[0] in f and 'fa' in f)]
+            if len(fasta_individual) == 0:
+                fasta_individual = [f for f in os.listdir(fasta_directory) if (MSA_reference_pdb.split('.')[0] in f and 'fa' in f)]
             try:
-                fasta_individual = [f for f in os.listdir(fasta_directory) if (MSA_reference_pdb.split('_')[0] in f and 'fa' in f)][0] #THIS IS NOT GENERALIZED
+                fasta_individual = fasta_individual[0]
             except:
-                print(f'Could not find an equivalent fasta file for {MSA_reference_pdb}')
+                raise SystemExit(f'Warning: Could not find an equivalent fasta file for {MSA_reference_pdb}, exiting. Check your naming schemes!')
 
             #Generate MSA alignment if file does not exist and output MSA indices corresponding to partcicular sequence
             msa_indices_reference = sequence_processing.generate_msa_alignment(alignment_file, combined_fasta, os.path.join(fasta_directory, fasta_individual))
