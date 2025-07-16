@@ -792,7 +792,8 @@ class WaterNetwork:
 
             if water_only == False:
                 for molecule in protein_active:    
-
+                    #print(len(MSA_indices))
+                    #print(molecule.resid)
                     MSA_index = MSA_indices[molecule.resid-1]
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
