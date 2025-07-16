@@ -791,7 +791,8 @@ class WaterNetwork:
                 G.add_node(molecule.O.index, pos=molecule.O.coordinates, atom_category='WAT', MSA=None) #have nodes on all oxygens
 
             if water_only == False:
-                for molecule in protein_active:          
+                for molecule in protein_active:    
+
                     MSA_index = MSA_indices[molecule.resid-1]
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
@@ -1173,7 +1174,11 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
     u = mda.Universe(pdb_file) 
 
     #Separate key atom groups
-    ag_wat = u.select_atoms(f'{water}', updating=True)
+    if directed:
+        ag_wat = u.select_atoms(f'{water}', updating=True)
+    else: 
+        #If not directed, only take oxygen atoms
+        ag_wat = u.select_atoms(f"{water} and name O*", updating=True)
 
     ag_protein = u.select_atoms(f'(protein {custom_sel}) and (name N* or name O* or name P* or name S*)', updating=True)
     ag_misc = u.select_atoms(f'not (protein or {water})', updating=True) #Keeping this for non-biological systems or where other solvent is important
@@ -1204,11 +1209,13 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
 
     #Add waters to network
     for mol in ag_wat.residues:
-        ats = [atom for atom in mol.atoms if 'O' in atom.name]
+        #ats = [atom for atom in mol.atoms if 'O' in atom.name]
+        ats = [atom for atom in mol.atoms]
 
         #Water molecules are objects which contain H1, H2, O atoms
         if len([f for f in ats if f.name=='O']) > 1:
-            raise SystemExit(f'Detected multiple oxygen atoms per one water molecule, exiting. Check for duplicates in residue {mol.resid}!')
+            print(f'Detected multiple oxygen atoms per one water molecule in structure {pdb_file}, using only the first instance.\n This may cause unpredictable behavior. Check for duplicates in residue {mol.resid}!')
+            ats = [ats[0]]
         water_network.add_water(mol.resid, *ats, mol.resid)
     
     if directed:
@@ -1408,15 +1415,17 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             numbers = [num for num in active_region_reference.split() if num.isnumeric()]
 
             if len(numbers) == 1:
-                msa_active_region_ref = sequence_processing.convert_msa_to_individual(
-                    msa_indices=msa_indices,
-                    msa_indices_ref=msa_indices_reference,
-                    resids=resids,
-                    resid_sequence_ref=reference_resids,
-                    resid_individual_ref=int(numbers[0])  # Convert to integer
-                )
-                msa_active_region_ref = f"resid {msa_active_region_ref} {' '.join(active_region_reference.split()[2:])}"
-
+                try:
+                    msa_active_region_ref = sequence_processing.convert_msa_to_individual(
+                        msa_indices=msa_indices,
+                        msa_indices_ref=msa_indices_reference,
+                        resids=resids,
+                        resid_sequence_ref=reference_resids,
+                        resid_individual_ref=int(numbers[0])  # Convert to integer
+                    )
+                    msa_active_region_ref = f"resid {msa_active_region_ref} {' '.join(active_region_reference.split()[2:])}"
+                except TypeError:
+                    msa_active_region_ref = active_region_reference
             else:
                 msa_numbers = []
                 for num in numbers:

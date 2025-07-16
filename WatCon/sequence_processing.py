@@ -12,6 +12,7 @@ from Bio.Seq import Seq
 import os
 
 from modeller import *
+
 def msa_with_modeller(alignment_file, combined_fasta):
     """
     Perform Multiple Sequence Alignment (MSA) using Modeller.
@@ -53,7 +54,7 @@ def msa_with_modeller(alignment_file, combined_fasta):
 
     #Write final alignment
     aln.write(file=alignment_file, alignment_format='PIR')
-    
+
 def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', sort_pdbs=True):
     """
     Perform a built-in structural alignment.
@@ -101,7 +102,11 @@ def perform_structure_alignment(pdb_dir, same_chain='A',out_dir='aligned_pdbs', 
 
         aln = Alignment(env)
 
-        m = Model(env, file=os.path.join(pdb_dir,pdbs[0]), model_segment=('FIRST:'+same_chain[0], 'LAST:'+same_chain[0]))
+        if isinstance(same_chain, str):
+            m = Model(env, file=os.path.join(pdb_dir,pdbs[0]), model_segment=('FIRST:'+same_chain[0], 'LAST:'+same_chain[0]))
+        else:
+            m = Model(env, file=os.path.join(pdb_dir,pdbs[0]), model_segment=('FIRST:'+same_chain[0], 'LAST:'+same_chain[1]))
+
         aln.append_model(m, atom_files=os.path.join(pdb_dir, pdbs[0]), align_codes=pdbs[0])
 
         #Select chain of interest
