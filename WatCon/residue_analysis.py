@@ -331,7 +331,7 @@ def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_di
                     else:
                         facecolor=color
                     plt.scatter(x, y, edgecolor=color, facecolor=facecolor, s=10)
-                    plt.text(x+0.1,y+0.1, name)
+                    plt.text(x+0.1,y+0.1, name_new, fontsize=4)
                     
                     #plt.text(x,y, name_new)
 
