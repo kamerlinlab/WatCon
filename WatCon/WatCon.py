@@ -152,8 +152,8 @@ def parse_analysis(filename):
 
     for line in lines:
         if 'concatemate:' in line:
-            files_to_concatenate = list(line.split(":")[1].split(';')[0])
-            kwargs['concatenate'] = files_to_concatenate
+            files_to_concatenate = line.split(":")[1].split(';')[0]
+            kwargs['concatenate'] = list(files_to_concatenate)
         elif 'active_region_definition' in line:
             active_region_definition = ' '.join(line.split(":")[1].split(';')[0])
             kwargs['active_region_definition'] = active_region_definition
@@ -317,7 +317,7 @@ def run_watcon_postanalysis(concatenate=None, input_directory='watcon_output', h
             print(f"Clustered PDB does not exist. Cannot calculate commonality")
             raise ValueError
 
-        plot_commonality(all_files, input_directory, f"cluster_pdbs{cluster_filebase}.pdb" , commonality_dict=None, plot_type=calculate_commonality)
+        plot_commonality(all_files, input_directory, f"cluster_pdbs/{cluster_filebase}.pdb" , commonality_dict=None, plot_type=calculate_commonality)
 
     if color_by_conservation is not None:
         from WatCon.find_conserved_networks import identify_conserved_water_clusters, identify_conserved_water_interactions_clustering, get_coordinates_from_topology

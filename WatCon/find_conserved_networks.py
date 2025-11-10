@@ -331,7 +331,7 @@ def create_clustered_network(clusters, max_connection_distance, create_graph=Tru
         clustered_network.graph = G
     return clustered_network
 
-def identify_conserved_water_interactions_clustering(networks, clusters, max_connection_distance=2.0, dist_cutoff=1.0, filename_base='CLUSTER'):
+def identify_conserved_water_interactions_clustering(networks, clusters, max_connection_distance=2.0, dist_cutoff=1.0, filename_base='CLUSTER', out_dir='cluster_pdbs'):
     """
     Rank water-water interactions in relation to clustering.
 
@@ -355,6 +355,9 @@ def identify_conserved_water_interactions_clustering(networks, clusters, max_con
     """
     from sklearn.preprocessing import MinMaxScaler
     import matplotlib.pyplot as plt
+    import os
+
+    os.makedirs(out_dir, exist_ok=True)
 
     interaction_dict = {}
     dist = lambda x1, y1, z1, x2, y2, z2: np.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2)
@@ -395,7 +398,7 @@ def identify_conserved_water_interactions_clustering(networks, clusters, max_con
     colors = [color for _, color in sorted(zip(b_factors, colors), key=lambda x: x[0])]
 
 
-    with open(f'{filename_base}.pml', 'w') as f:
+    with open(f'{out_dir}/{filename_base}.pml', 'w') as f:
         for i, (pair, color) in enumerate(zip(pairs, colors)):
             f.write(f"distance interaction{i}, resid {pair.split(',')[0]}, resid {pair.split(',')[1]}\n")
             f.write(f"set dash_color, [{color[0]},{color[1]},{color[2]}], interaction{i}\n")
@@ -537,7 +540,7 @@ def find_clusters_from_densities(density_file, output_name=None, threshold=1.5):
     return(hotspot_coords)
 
     
-def plot_commonality(files=None, input_directory=None, cluster_pdb=None, commonality_dict=None, plot_type='bar', output='commonality'):
+def plot_commonality(files=None, input_directory=None, cluster_pdb=None, commonality_dict=None, plot_type='bar', output='commonality', out_dir='images'):
     """
     Plot commonality to cluster centers.
 
@@ -561,7 +564,9 @@ def plot_commonality(files=None, input_directory=None, cluster_pdb=None, commona
     None
     """
     import matplotlib.pyplot as plt
+    import os
 
+    os.makedirs(out_dir, exist_ok=True)
     names = True
     if commonality_dict is None:
         name_list = []
@@ -619,7 +624,7 @@ def plot_commonality(files=None, input_directory=None, cluster_pdb=None, commona
         ax.tick_params(axis='x', rotation=60)
         #ax.legend(frameon=True, edgecolor='k', fontsize=10) 
         
-        plt.savefig(f"{output}_bar.png", dpi=200)
+        plt.savefig(f"{out_dir}/{output}_bar.png", dpi=200)
     
     elif plot_type == 'hist':
         fig, ax = plt.subplots(1, figsize=(3,2), tight_layout=True)
@@ -631,7 +636,7 @@ def plot_commonality(files=None, input_directory=None, cluster_pdb=None, commona
         ax.plot(xcenters, hist)
         ax.set_xlabel('Commonality score')
         ax.set_ylabel('Density')
-        plt.savefig(f"{output}_hist.png", dpi=200)
+        plt.savefig(f"{out_dir}/{output}_hist.png", dpi=200)
         
     else:
         print('Select a valid plot type. Currently only "bar" or "hist".')

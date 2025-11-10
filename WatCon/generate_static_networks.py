@@ -205,7 +205,7 @@ class WaterNetwork:
         ----------
         None
         """
-        if residue_name == 'WAT' or residue_name == 'HOH' or residue_name == 'SOL' or residue_name == 'H2O': #these names are hardcoded, WE NEED TO FIX THIS
+        if residue_name == 'WAT' or residue_name == 'HOH' or residue_name == 'SOL' or residue_name == 'H2O': #these names are hardcoded
             water  = WaterMolecule(index, atom_name, x, y, z) 
             self.water_molecules.append(water)
         else: #Currently only adds protein atoms
@@ -240,11 +240,11 @@ class WaterNetwork:
         ----------
         None
         """
-        o = WaterAtom(o.index, 'O', residue_number, *o.position)
+        o = WaterAtom(o.id, 'O', residue_number, *o.position)
 
         if h1 is not None:
-            h1 = WaterAtom(h1.index, 'H1',residue_number, *h1.position)
-            h2 = WaterAtom(h2.index, 'H2',residue_number, *h2.position)
+            h1 = WaterAtom(h1.id, 'H1',residue_number, *h1.position)
+            h2 = WaterAtom(h2.id, 'H2',residue_number, *h2.position)
 
         water = WaterMolecule(index, o, h1, h2, residue_number)
         self.water_molecules.append(water)
@@ -371,6 +371,7 @@ class WaterNetwork:
         water_coords = np.array([mol.O.coordinates for mol in waters])
         water_indices = np.array([mol.O.index for mol in waters])
         water_names = np.array(['O' for _ in waters])
+
 
         if len(water_coords.shape) != 2:
             return connections  
@@ -795,6 +796,7 @@ class WaterNetwork:
                     #print(len(MSA_indices))
                     #print(molecule.resid)
                     MSA_index = MSA_indices[molecule.resid-1]
+
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
 
             self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=water_active, 
@@ -1202,7 +1204,7 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
                 msa_resid = msa_indexing[atm.resid-1] #CHECK THIS 
             except:
                 msa_resid = None
-            water_network.add_atom(atm.index, atm.name, atm.resname, *atm.position, atm.resid, msa_resid)
+            water_network.add_atom(atm.id, atm.name, atm.resname, *atm.position, atm.resid, msa_resid)
     elif network_type == 'water-water':
         water_only = True
     else:
@@ -1210,14 +1212,23 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
 
     #Add waters to network
     for mol in ag_wat.residues:
+        #print([atom.bynum for atom in mol.atoms])
+        #print([atom.index for atom in mol.atoms])
         #ats = [atom for atom in mol.atoms if 'O' in atom.name]
-        ats = [atom for atom in mol.atoms]
+        oxygen = [atom for atom in mol.atoms if 'O' in atom.name]
+        hydrogens = [atom for atom in mol.atoms if 'O' not in atom.name]
 
         #Water molecules are objects which contain H1, H2, O atoms
-        if len([f for f in ats if f.name=='O']) > 1:
+        if len(oxygen) > 1:
             print(f'Detected multiple oxygen atoms per one water molecule in structure {pdb_file}, using only the first instance.\n This may cause unpredictable behavior. Check for duplicates in residue {mol.resid}!')
-            ats = [ats[0]]
-        water_network.add_water(mol.resid, *ats, mol.resid)
+            oxygen = [oxygen[0]]
+        if not directed and len(hydrogens) > 1:
+            ats = [f for f in ats if f.name=='O']
+
+        if directed:
+            water_network.add_water(mol.resid, oxygen[0], mol.resid, *hydrogens)
+        else:
+            water_network.add_water(mol.resid, oxygen[0], mol.resid)
     
     if directed:
         water_network.generate_directed_network(msa_indexing, active_region_residue, active_region_COM=active_region_COM, active_region_only=active_region_only, active_region_radius=active_region_radius, 
@@ -1266,7 +1277,7 @@ def get_clusters(list_of_networks, cluster, min_samples, coordinates=None, eps=0
 
 def initialize_network(structure_directory, topology_file=None, trajectory_file=None, network_type='water-protein', 
                        include_hydrogens=False, custom_selection=None, active_region_reference=None, active_region_COM=False, active_region_only=False,
-                       active_region_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.3, angle_criteria=None,
+                       active_region_radius=8.0, water_name=None, multi_model_pdb=False, max_distance=3.8, angle_criteria=None,
                        analysis_conditions='all', analysis_selection='all', project_networks=False, return_network=True,
                        cluster_coordinates=False, clustering_method='hdbscan', cluster_water_only=True, min_cluster_samples=15, eps=None, msa_indexing=True,
                        alignment_file='alignment.txt', combined_fasta='all_seqs.fa', fasta_directory='fasta', classify_water=True, classification_file_base='STATIC',
@@ -1396,6 +1407,10 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             msa_indices = None
 
         if active_region_reference is not None and MSA_reference_pdb is not None:
+            if pdb_file.endswith('prmtop') or pdb_file.endswith('parm7'):
+                raise SystemExit(f"Current limitations of WatCon require input structure files to contain coordinates,\
+                                  and the given input file is an AMBER prmtop or parm file, which does not contain coordinates.\
+                                  Please convert input files into PDB files before continuing.")
             u = mda.Universe(os.path.join(pdb_dir, pdb_file))
             resids = u.residues.resids.tolist()
             reference_resids, msa_indices_reference = references
@@ -1553,6 +1568,8 @@ def initialize_network(structure_directory, topology_file=None, trajectory_file=
             references = [reference_resids, msa_indices_reference]
         else:
             references=None
+    else:
+        references=None
 
     if classify_water:
         #Find ref_coords if particular residue is indicated

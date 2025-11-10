@@ -297,7 +297,8 @@ def pdb_to_fastas(pdb_file, fasta_out, name='STATE', custom_residues=None):
     'HIP': 'H', 'HID': 'H', 'HIE': 'H', 'HISD': 'H',
     'HISE': 'H', 'HISP': 'H', 'AS4': 'D','ASH': 'D',
     'GL4': 'E', 'GLH': 'E', 'ARN': 'R', 'LYN': 'K',
-    'CYX': 'C', 'CYM': 'C', 'CSP': 'C', 'SEP': 'S', 'ASX': 'D'
+    'CYX': 'C', 'CYM': 'C', 'CSP': 'C', 'SEP': 'S', 'ASX': 'D',
+    'HSD': 'H', 'HSP': 'H', 'HSE': 'H', 'MSE': 'M'
 }
     if custom_residues is not None:
         for key, val in custom_residues.items():
@@ -308,10 +309,11 @@ def pdb_to_fastas(pdb_file, fasta_out, name='STATE', custom_residues=None):
         pdb_lines = PDB.readlines()
 
     for line in pdb_lines:
-        if ('ATOM' in line) and ('CA' in line):
+        if ('ATOM' in line) and ('CA' in line) and ('ANISOU' not in line):
             #aa = line.split()[3]
             aa = line[17:20]
             sequence.append(amino_acid_dict[aa])
+        
 
 
     with open(os.path.join(fasta_out,f"{name}.fa"), 'w') as FASTA:

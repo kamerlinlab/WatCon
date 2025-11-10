@@ -331,6 +331,7 @@ def plot_interactions_from_angles(csvs, input_dir='msa_classification',output_di
                     else:
                         facecolor=color
                     plt.scatter(x, y, edgecolor=color, facecolor=facecolor, s=10)
+                    plt.text(x+0.1,y+0.1, name)
                     
                     #plt.text(x,y, name_new)
 
@@ -370,6 +371,11 @@ def histogram_metrics(all_files, input_directory, concatenate, output_dir='image
     """
     import pickle
 
+    if not isinstance(concatenate, list):
+        concatenate = [concatenate]
+
+    os.makedirs(output_dir, exist_ok=True)
+
     #Initialize dictionaries to store data
     metrics = ['density', 'characteristic_path_length', 'entropy']
 
@@ -379,7 +385,6 @@ def histogram_metrics(all_files, input_directory, concatenate, output_dir='image
 
     #Formatted titles for plotting
     plotting_names = ['Graph Density', 'CPL', 'Graph Entropy', 'Water-Water', 'Water-Protein']
-
 
     #Combine data in all concatenated files
     for file in concatenate:

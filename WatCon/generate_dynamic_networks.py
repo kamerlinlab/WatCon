@@ -1586,7 +1586,12 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             #print('Warning: Setting msa_indices to default residues (no MSA alignment). If this is not desired, make sure to apply msa_indexing=True.')
 
         if active_region_reference is not None and MSA_reference_pdb is not None:
+            if pdb_file.endswith('prmtop') or pdb_file.endswith('parm7'):
+                raise SystemExit(f"Current limitations of WatCon require input structure files to contain coordinates,\
+                                  and the given input file is an AMBER prmtop or parm file, which does not contain coordinates.\
+                                  Please convert input files into PDB files before continuing.")
             u = mda.Universe(os.path.join(pdb_dir, pdb_file))
+            
             resids = u.residues.resids.tolist()
             reference_resids, msa_indices_reference = references
 

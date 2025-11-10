@@ -1,0 +1,69 @@
+TITLE     MDANALYSIS FRAME 0: Created by PDBWriter
+CRYST1    1.000    1.000    1.000  90.00  90.00  90.00 P 1           1
+REMARK     285 UNITARY VALUES FOR THE UNIT CELL AUTOMATICALLY SET
+REMARK     285 BY MDANALYSIS PDBWRITER BECAUSE UNIT CELL INFORMATION
+REMARK     285 WAS MISSING.
+REMARK     285 PROTEIN DATA BANK CONVENTIONS REQUIRE THAT
+REMARK     285 CRYST1 RECORD IS INCLUDED, BUT THE VALUES ON
+REMARK     285 THIS RECORD ARE MEANINGLESS.
+ATOM      1  O   SOL X   1       0.000   0.000   0.000  1.00  0.00      SOL     
+ATOM      2  H1  SOL X   1       0.959  -0.027   0.032  1.00  0.00      SOL     
+ATOM      3  H2  SOL X   1      -0.280  -0.588   0.706  1.00  0.00      SOL     
+ATOM      4  O   SOL X   2       3.000   0.000   0.000  1.00  0.00      SOL     
+ATOM      5  H1  SOL X   2       3.959  -0.027   0.032  1.00  0.00      SOL     
+ATOM      6  H2  SOL X   2       2.720  -0.588   0.706  1.00  0.00      SOL     
+ATOM      7  O   SOL X   3       6.000   0.000   0.000  1.00  0.00      SOL     
+ATOM      8  H1  SOL X   3       6.959  -0.027   0.032  1.00  0.00      SOL     
+ATOM      9  H2  SOL X   3       5.720  -0.588   0.706  1.00  0.00      SOL     
+ATOM     10  O   SOL X   4       9.000   0.000   0.000  1.00  0.00      SOL     
+ATOM     11  H1  SOL X   4       9.959  -0.027   0.032  1.00  0.00      SOL     
+ATOM     12  H2  SOL X   4       8.720  -0.588   0.706  1.00  0.00      SOL     
+ATOM     13  O   SOL X   5      12.000   0.000   0.000  1.00  0.00      SOL     
+ATOM     14  H1  SOL X   5      12.959  -0.027   0.032  1.00  0.00      SOL     
+ATOM     15  H2  SOL X   5      11.720  -0.588   0.706  1.00  0.00      SOL     
+ATOM     16  O   SOL X   6       0.000   3.000   0.000  1.00  0.00      SOL     
+ATOM     17  H1  SOL X   6       0.959   2.973   0.032  1.00  0.00      SOL     
+ATOM     18  H2  SOL X   6      -0.280   2.412   0.706  1.00  0.00      SOL     
+ATOM     19  O   SOL X   7       3.000   3.000   0.000  1.00  0.00      SOL     
+ATOM     20  H1  SOL X   7       3.959   2.973   0.032  1.00  0.00      SOL     
+ATOM     21  H2  SOL X   7       2.720   2.412   0.706  1.00  0.00      SOL     
+ATOM     22  O   SOL X   8       6.000   3.000   0.000  1.00  0.00      SOL     
+ATOM     23  H1  SOL X   8       6.959   2.973   0.032  1.00  0.00      SOL     
+ATOM     24  H2  SOL X   8       5.720   2.412   0.706  1.00  0.00      SOL     
+ATOM     25  O   SOL X   9       9.000   3.000   0.000  1.00  0.00      SOL     
+ATOM     26  H1  SOL X   9       9.959   2.973   0.032  1.00  0.00      SOL     
+ATOM     27  H2  SOL X   9       8.720   2.412   0.706  1.00  0.00      SOL     
+ATOM     28  O   SOL X  10      12.000   3.000   0.000  1.00  0.00      SOL     
+ATOM     29  H1  SOL X  10      12.959   2.973   0.032  1.00  0.00      SOL     
+ATOM     30  H2  SOL X  10      11.720   2.412   0.706  1.00  0.00      SOL     
+CONECT    1    2    3
+CONECT    2    1
+CONECT    3    1
+CONECT    4    5    6
+CONECT    5    4
+CONECT    6    4
+CONECT    7    8    9
+CONECT    8    7
+CONECT    9    7
+CONECT   10   11   12
+CONECT   11   10
+CONECT   12   10
+CONECT   13   14   15
+CONECT   14   13
+CONECT   15   13
+CONECT   16   17   18
+CONECT   17   16
+CONECT   18   16
+CONECT   19   20   21
+CONECT   20   19
+CONECT   21   19
+CONECT   22   23   24
+CONECT   23   22
+CONECT   24   22
+CONECT   25   26   27
+CONECT   26   25
+CONECT   27   25
+CONECT   28   29   30
+CONECT   29   28
+CONECT   30   28
+END

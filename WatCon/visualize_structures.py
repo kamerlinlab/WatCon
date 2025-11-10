@@ -47,8 +47,8 @@ def pymol_project_oxygen_network(network, filename='STATE.pml', out_path='pymol_
 
 
         for i, connection in enumerate(connection_list):
-            FILE.write(f"distance interaction{i}, id {connection[0]+1}, id {connection[1]+1}\n")
-            FILE.write(f"show spheres, id {connection[0]+1}\nshow spheres, id {connection[1]+1}\n")
+            FILE.write(f"distance interaction{i}, id {connection[0]}, id {connection[1]}\n")
+            FILE.write(f"show spheres, id {connection[0]}\nshow spheres, id {connection[1]}\n")
 
         #Stylistic preferences
         FILE.write(f"set dash_radius, 0.15, interaction*\nset dash_color, black, interaction*\n")
