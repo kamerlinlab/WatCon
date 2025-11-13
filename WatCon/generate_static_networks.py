@@ -1212,9 +1212,6 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
 
     #Add waters to network
     for mol in ag_wat.residues:
-        #print([atom.bynum for atom in mol.atoms])
-        #print([atom.index for atom in mol.atoms])
-        #ats = [atom for atom in mol.atoms if 'O' in atom.name]
         oxygen = [atom for atom in mol.atoms if 'O' in atom.name]
         hydrogens = [atom for atom in mol.atoms if 'O' not in atom.name]
 
@@ -1222,8 +1219,7 @@ def extract_objects(pdb_file, network_type, custom_selection, active_region_refe
         if len(oxygen) > 1:
             print(f'Detected multiple oxygen atoms per one water molecule in structure {pdb_file}, using only the first instance.\n This may cause unpredictable behavior. Check for duplicates in residue {mol.resid}!')
             oxygen = [oxygen[0]]
-        if not directed and len(hydrogens) > 1:
-            ats = [f for f in ats if f.name=='O']
+
 
         if directed:
             water_network.add_water(mol.resid, oxygen[0], mol.resid, *hydrogens)
