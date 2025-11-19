@@ -592,7 +592,7 @@ def plot_residue_interactions(topology_file, cutoff=0.0, watcon_directory='watco
 
     ax.set_ylabel('Interaction Score', fontsize=12)
     plt.xticks(rotation=90)
-    fig.savefig(os.path.join(output_dir, 'Interaction_counts_bar.png', dpi=200, bbox_inches='tight'))
+    fig.savefig(os.path.join(output_dir, 'Interaction_counts_bar.png'), dpi=200, bbox_inches='tight')
 
     
 
