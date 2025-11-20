@@ -120,9 +120,11 @@ However, for our purposes, it would benefit us to show the differences between c
 
 
 
-.. image:: ../images/conservation_histogram.png
+.. figure:: ../images/conservation_histogram.png
    :width: 800
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447
 
 Here we color open structures by open purple bars and closed structures with gray cross-hatched bars. From this image we can tell that PTPN1 (PTP1B) in both the open and closed state show very high conservation to the PTP1B closed network, which makes logical sense. We can see that PTPN22 closed also has a high conservation score, and interesting, so does PTPN4 and PTPN14 in the open state. Further examination on which water locations are most conserved could give us better indication as to how sequence related to network conservation in PTPs.
 
@@ -149,9 +151,11 @@ Since we have already transformed our cluster coordinates directly, we instead w
 
 This will write a new PDB of the same cluster centers as before (although now aligned to our current working coordinate frame) with the b-factor column labeled by a normalized conservation score. In this case, for each structure, we find how many waters are within 1 Angstrom of a cluster center and use a min-max scaling to normalize the final value. Then, we created a .pml file which will color pairwise 'interactions' among clusters by conservation; these are not really interactions since the clusters are only approximate locations of conserved water molecules. Rather, the conservation of these 'interactions' indicates how often two waters are present simultaneously, which provides a good indication as to how certain aspects of water networks are conserved across structures at a coarse level. Using PyMOL, we can then visualize both how conserved each cluster center is and how conserved the pairwise clusters are:
 
-.. image:: ../images/conserved_projection.png
+.. figure:: ../images/conserved_projection.png
    :width: 400
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447
 
 Here, conservation is colored as a spectrum from blue-to-red, with red being more conserved and blue being less conserved. We can see that there are fleeting water positions around the WPD-loop (blue) which are not highly conserved. This makes sense as our static structures contain a variety of different WPD-loop conformations, and so the neighboring waters will likely be in very different positions across structures. However, the N-terminal portion of the WPD-loop contains highly conserved water positions, which do not interact directly with waters deeper into the active site. Furthermore, there are clusters of water molecules closer to the P-loop (orange) which are not highly conserved across structures. This is likely due to the fact that many closed crystal structures contain ligands or bound ions, preventing water molecules within these regions.
 

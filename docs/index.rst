@@ -7,11 +7,14 @@ Welcome to WatCon's documentation!
 =========================================================
 
 WatCon is a Python package which can be used to comprehensively analyze water networks in both static structures and dynamic trajectories.
-WatCon further allows for analysis of conserved water positions and interactions across protein families and allows for conserved water netowrks to be shown easily via PyMOL projections. WatCon was first introduced in the preprint `WatCon: A Python Tool for Analysis of Conserved Water Networks Across Protein Families <https://chemrxiv.org/engage/chemrxiv/article-details/68028e33e561f77ed4af33c7>`_ .
+WatCon further allows for analysis of conserved water positions and interactions across protein families and allows for conserved water netowrks to be shown easily via PyMOL projections. WatCon was first introduced in the publication `WatCon: A Python Tool for Analysis of Conserved Water Networks Across Protein Families <https://pubs.acs.org/doi/10.1021/jacsau.5c00447>`_ .
 
-.. image:: images/toc.png
+.. figure:: images/toc.png
    :width: 600
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447 
+
 
 .. grid:: 1 1 2 2
 
@@ -96,3 +99,4 @@ WatCon further allows for analysis of conserved water positions and interactions
    tutorials
    api
    installation
+   developer_guide

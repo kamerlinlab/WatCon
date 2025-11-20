@@ -3,8 +3,10 @@ WatCon Package
 
 WatCon is organized in the following manner:
 
-.. image:: images/workflow.png
+.. figure:: images/workflow.png
    :width: 800
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447 
 
 Details on the contents of WatCon are outlined below.
 

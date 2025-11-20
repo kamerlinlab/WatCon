@@ -198,15 +198,19 @@ Let's first take a look at the global properties of the water networks and see h
        #Save figure
        fig.savefig(f"{metric}.png", dpi=200, bbox_inches='tight')
    
-.. image:: ../images/supplemental_2d_hist.png
+.. figure:: ../images/supplemental_2d_hist.png
    :width: 400
    :align: center
 
+   Image sourced from DOI: 10.1021/jacsau.5c00447
+
 We see from these results that graph entropy and density increases subtly with WPD-loop opening, while characteristic path length decreases very subtly. Further details on these results and interpretations can be found in the source publication. More obviously, we can see that the number of water-water interactions increases as the WPD-loop opens. Using the :mod:`WatCon.visualize_structures` module, we can create pymol projections of these different conformations and visually see how the water-water and water-protein interactions change dependent on WPD-loop conformation.
 
-.. image:: ../images/trajectory_tracker.png
+.. figure:: ../images/trajectory_tracker.png
    :width: 600
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447
 
 We realize that this is a reasonably complex plotting script due to the fact that we wish to compare our computed metrics with previously gathered distance data. We note that if you want to plot only the 1D-histogram of metrics, this can be done easily by using the WatCon built-in post-analysis functionality. Here is an example input file that would accomplish this goal:
 
@@ -248,9 +252,11 @@ Or this can be accomplished by using the python API directly:
 
 If we present the resulting bar plot with a projection of the high-scoring residues, we can obtain an image like this.
 
-.. image:: ../images/Interaction_bar_with_projections.png
+.. figure:: ../images/Interaction_bar_with_projections.png
    :width: 800
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447
 
 From this image, we see that residues E115, W179, D181, C215, S216, R221, Q262, and Q266 interact with far more waters consistently and simultaneously than other residues. As a result, modification of these residue positions likely would cause dramatic changes in water network structure. More extensive analysis can be conducted exploring more in-depth how specific network structure changes are correlated with differences in residue interactions and positions, which is now made easier with the development of WatCon.
 

@@ -163,9 +163,11 @@ Let's first begin by comparing the distrbutions of calculated metrics between th
 
 This will produce a series of histograms comparing the static and dynamic information, similar to this figure.
 
-.. image:: ../images/histograms_metrics.png
+.. figure:: ../images/histograms_metrics.png
    :width: 800
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447 
 
 
 As we can see, the number of water-water and water-protein interactions is consistently higher for the dynamic information versus the static. This makes logical sense since the dynamic structures have far more waters present and so far more opportunities for water-protein interactions. The graph entropy is also consistently slightly higher for the dynamic structures versus the static structures. The density, interestingly, is not higher for the dynamic networks despite greater numbers of waters present. This is likely because although the static structures have fewer waters present, the ones that are resolved are more tightly bound to the protein and thus are more likely to have strong interactions.
@@ -190,9 +192,11 @@ Although we observe differences in network structure between the dynamic and sta
 
 When doing so, you should be able to compare the hotspots very easily:
 
-.. image:: ../images/densities_clusters.png
+.. figure:: ../images/densities_clusters.png
    :width: 400
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447
 
 We can see that the MD data does sample most of the crystal structure hotspots, but not quite all. These results indicate that in order to completely understand the complex water networks of our proteins of interest, it may benefit us to combine MD and crystal structure data. Luckily, this process is made quite easy with the flexible use of WatCon!
 
@@ -222,9 +226,11 @@ You can also call the WatCon API directly to do this same thing:
 
 This will produce one image for every conserved residue which exhibits water-protein interactions. The dynamic data will be used to generate an underlying surface distribution of angle calculations, while values associated from the static structures will be plotted on top as scatterpoints and colored blue (backbone atoms) or purple (side-chain atoms). 
 
-.. image:: ../images/angles_supplement.png
+.. figure:: ../images/angles_supplement.png
    :width: 800
    :align: center
+
+   Image sourced from DOI: 10.1021/jacsau.5c00447
 
 .. note:: The :mod:`WatCon.residue_analysis.plot_interactions_from_angles` function relies on two distinct naming schemes to differentiate between which data to plot as a contour surface and which to plot as scatterpoints. The default is 'DYNAMIC' and 'STATIC', assuming files are named starting with either 'DYNAMIC' or 'STATIC'. This can be changed by altering the :python:`name1` or :python:`name2` key words, which is currently only possible through the use of the API. CSV filenames are defined by the :python:`classification_file_base` input.
 

@@ -72,4 +72,6 @@ Frequently Asked Questions
 
    This can happen under a number of circumstances, but normally occurs when structures loaded are slightly different than those inputted into WatCon initially. For trajectories, ensure that the .pml file corresponds to the frame that you are currently viewing on PyMOL. Additionally, a sufficiently large active region could potentially cause interactions to be found which cross the periodic boundaries of the simulation box. If this happens, the resulting connections will look incorrect, but are consistent with periodic boundary condition definitions. Finally, ensure that the atom labeling for the structure file loaded in PyMOL is the same as that inputted into WatCon, differences in input file structure (even if the underlying protein is the same) can cause changes in atom numbers, which will affect projection accuracy. 
 
+.. dropdown:: How do I know what options to select in my input file?
 
+   Due to WatCon's flexibility, new users may be overwhelmed with what options to select to run WatCon analysis. For detailed explanations of all inputs and flags, reference the documentation for the :func:`WatCon.generate_static_networks.initialize_network` and :func:`WatCon.generate_dynamic_networks.intialize_network` functions, which provide more details.
