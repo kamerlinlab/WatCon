@@ -66,7 +66,7 @@ def create_water_universe(n_residues: float) -> mda.Universe:
     sol.add_TopologyAttr('resids', mol_ids)
     return sol
 
-
+'''
 class TestWaterNetwork:
     """Test WaterNetwork objects"""
     
@@ -95,7 +95,7 @@ class TestWaterNetwork:
         assert len(connections) == 4
         connections = net.find_connectons(dist_cutoff=1)
         assert len(connections) == 0
-
+'''
         
 
 

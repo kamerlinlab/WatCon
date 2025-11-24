@@ -367,18 +367,18 @@ class WaterNetwork:
             waters = self.water_molecules
             protein = self.protein_atoms
 
+        
         # Extract water oxygen coordinates and indices
         water_coords = np.array([mol.O.coordinates for mol in waters])
         water_indices = np.array([mol.O.index for mol in waters])
         water_names = np.array(['O' for _ in waters])
 
-
         if len(water_coords.shape) != 2:
             return connections  
+
         # Water-Water connections
         tree = cKDTree(water_coords)
         dist, indices = tree.query(water_coords, k=max_neighbors, distance_upper_bound=dist_cutoff)
-
         for i, neighbors in enumerate(indices):
             for j, neighbor in enumerate(neighbors):
                 if neighbor != i and dist[i, j] <= dist_cutoff:
@@ -816,7 +816,7 @@ class WaterNetwork:
                     MSA_index = MSA_indices[molecule.resid-1]
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
             
-            self.connections = self.find_connections(dist_cutoff=3.0, water_active=None, protein_active=None, 
+            self.connections = self.find_connections(dist_cutoff=max_connection_distance, water_active=None, protein_active=None, 
                                                         active_region_only=False, water_only=water_only, max_neighbors=max_neighbors)
 
             for connection in self.connections:
