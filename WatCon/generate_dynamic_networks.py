@@ -243,9 +243,9 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         ----------
         None
         """
-        o = WaterAtom(o.index, 'O', residue_number, *o.position)
-        h1 = WaterAtom(h1.index, 'H1',residue_number, *h1.position)
-        h2 = WaterAtom(h2.index, 'H2',residue_number, *h2.position)
+        o = WaterAtom(o.index+1, 'O', residue_number, *o.position)
+        h1 = WaterAtom(h1.index+1, 'H1',residue_number, *h1.position)
+        h2 = WaterAtom(h2.index+1, 'H2',residue_number, *h2.position)
         water = WaterMolecule(index, o, h1, h2, residue_number)
         self.water_molecules.append(water)
 
@@ -309,9 +309,10 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
         for mol in self.water_molecules:
             #Include atoms within a distance cutoff
             water_positions = np.array([mol.O.coordinates, mol.H1.coordinates, mol.H2.coordinates])
-            
             dist = np.min(distances.distance_array(water_positions, reference_positions))
-            if dist <= active_region_radius:            
+            if dist <= active_region_radius:          
+                #print(mol.resid, mol.O.index)
+                #print(water_positions)
                 active_region_atoms.append(mol)
                 water_active.append(mol)
 
@@ -1367,7 +1368,7 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
 
     #Allow for user-defined water name
     if water_name is None:
-        water = 'resname HOH or resname WAT or resname SOL or resname H2O'
+        water = 'resname HOH or resname WAT or resname SOL or resname H2O or resname TIP3'
     else:
         water = f"resname {water_name}"
 
@@ -1408,8 +1409,10 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
     except:
         #Make water only
         print('No protein found, creating a network of only waters')
-        ag_wat = u.select_atoms(f"resname HOH or resname WAT or resname SOL")
-
+        if water_name is None:
+            ag_wat = u.select_atoms(f"resname HOH or resname WAT or resname SOL or resname H2O or resname TIP3")
+        else:
+            ag_wat = u.select_atoms(f"resname {water_name}")
     #extract coordinates from frame of interest
     u.trajectory[frame_idx] 
 
@@ -1440,6 +1443,7 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
 
     #Add waters to network
     for mol in ag_wat.residues:
+
         if len(mol.atoms) > 3:
             valid_atoms = [f for f in mol.atoms if ('H' in f.name or 'O' in f.name)]
         else:
