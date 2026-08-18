@@ -893,6 +893,7 @@ class WaterNetwork:  #For water-protein analysis -- extrapolate to other solvent
             if water_only == False:
                 #for molecule in self.protein_subset:
                 for molecule in self.protein_atoms:
+                    MSA_index = MSA_indices[molecule.resid-1]
                     G.add_node(molecule.index, pos=molecule.coordinates, atom_category='PROTEIN', MSA=MSA_index)
             
             #Add edges
@@ -1393,12 +1394,20 @@ def extract_objects_per_frame(pdb_file, trajectory_file, frame_idx, network_type
 
             # Find hydrogens near these heavy atoms (within 1.2 Å, a typical H-bond distance)
             from MDAnalysis.analysis.distances import distance_array
+            from MDAnalysis.guesser import tables
 
             dists = distance_array(hydrogens.positions, polar_heavy.positions)
             close_hydrogens = hydrogens[dists.min(axis=1) < 1.2]  # Select only close hydrogens
 
             # Step 4: Combine hydrogens and polar atoms into one AtomGroup
             relevant_atoms = close_hydrogens + polar_heavy
+
+            # Checks if all atom types have defined VDW radii and guesses a defined atom type if not
+            vdw_radii = tables.vdwradii.copy()
+            atom_types = [ atom.type for atom in relevant_atoms ]
+            atom_types = set(atom_types)
+            if not all(atom_type in vdw_radii for atom_type in atom_types):
+                u.guess_TopologyAttrs(to_guess=['types'], force_guess=['types']) #allows guess_bonds() to work with weird/forcefield-specific atom types
             relevant_atoms.guess_bonds()  # Guess bonds only for relevant hydrogens
 
 
@@ -1775,6 +1784,8 @@ def initialize_network(topology_file, trajectory_file, structure_directory='.', 
             references = [reference_resids, msa_indices_reference]
         else:
             references=None
+    else:
+        references=None
 
     if classify_water:
         #Find ref_coords if particular residue is indicated
